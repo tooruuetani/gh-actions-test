@@ -1,0 +1,16 @@
+name: "Run eslint and prettier"
+description: "Run eslint and prettier"
+inputs:
+  dir:
+    description: "Working directory for installation"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check by prettier
+      run: npm run format
+      shell: bash
+    - name: Check by eslint
+      run: npm run lint
+      shell: bash
