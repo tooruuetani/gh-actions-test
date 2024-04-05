@@ -27,7 +27,7 @@ runs:
     - name: Specify cache key
       id: cache
       run: |
-        HASH=${{ hashFiles('poetry.lock', 'python3_path.txt') }}
+        HASH=${{ hashFiles('**/poetry.lock', '**/python3_path.txt') }}
         echo "hash=$HASH" >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ inputs.dir }}

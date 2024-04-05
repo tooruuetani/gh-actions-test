@@ -18,7 +18,7 @@ runs:
     - name: Specify cache key
       id: cache
       run: |
-        HASH=${{ hashFiles('package-lock.json') }}
+        HASH=${{ hashFiles('**/package-lock.json') }}
         echo "hash=$HASH" >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ inputs.dir }}
