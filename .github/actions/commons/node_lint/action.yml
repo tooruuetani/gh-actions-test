@@ -11,6 +11,8 @@ runs:
     - name: Check by prettier
       run: npm run format
       shell: bash
+      working-directory: ${{ inputs.dir }}
     - name: Check by eslint
       run: npm run lint
       shell: bash
+      working-directory: ${{ inputs.dir }}
