@@ -1,0 +1,26 @@
+name: "Install Node.js runtime"
+description: "Install Node.js runtime and cache node_modules"
+inputs:
+  dir:
+    description: "Working directory for installation"
+  version:
+    description: "Node.js version"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.version }}
+    - name: Cache node_modules
+      uses: actions/cache@v4
+      id: node_modules_cache
+      with:
+        path: "${{ inputs.dir }}/node_modules"
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('${{ inputs.dir }}/package-lock.json') }}
+    - name: Install Dependencies
+      if: ${{ steps.node_modules_cache.outputs.cache-hit != 'true' }}
+      run: npm ci
+      shell: bash
