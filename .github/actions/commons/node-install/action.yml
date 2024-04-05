@@ -14,13 +14,15 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.version }}
+    - name: Specify cache key
+      id: specify_cache_key
+      run: echo "key=$(echo ${{ inputs.dir }}/package-lock.json" >> $GITHUB_OUTPUT
     - name: Cache node_modules
       uses: actions/cache@v4
       id: node_modules_cache
-      dir: ${{ inputs.dir }}
       with:
         path: "node_modules"
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+        key: ${{ runner.os }}-node-modules-${{ hashFiles(steps.specify_cache_key.key) }}
     - name: Install Dependencies
       if: ${{ steps.node_modules_cache.outputs.cache-hit != 'true' }}
       dir: ${{ inputs.dir }}
