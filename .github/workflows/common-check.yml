@@ -50,6 +50,11 @@ jobs:
           dir: service/backend
           version: "3.11"
           version-poetry: "1.8.2"
+      - name: Run tests
+        uses: ./.github/actions/commons/python_test
+        with:
+          dir: service/backend
+          need_comment: "true"
 
   test_service_frontend:
     needs:
