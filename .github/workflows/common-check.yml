@@ -43,3 +43,16 @@ jobs:
         with:
           dir: service/frontend
           version: "18"
+
+  check_code:
+    needs:
+      - test_service_frontend
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force failure
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: echo "Failed or canceled" && exit 1
+      - run: echo "$json"
+        env:
+          json: ${{ toJSON(needs) }}
