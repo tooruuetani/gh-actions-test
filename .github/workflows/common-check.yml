@@ -33,6 +33,24 @@ jobs:
               - "service/frontend/tests/*"
               - "service/frontend/public/*"
 
+  test_service_backend:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.service_backend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: ./.github/actions/commons/python-install
+        with:
+          dir: service/backend
+          version: "3.11"
+          version-poetry: "1.8.2"
+
   test_service_frontend:
     needs:
       - changes

@@ -3,6 +3,7 @@ description: "Install Node.js runtime and cache node_modules"
 inputs:
   dir:
     description: "Working directory for installation"
+    required: true
   version:
     description: "Node.js version"
     required: true

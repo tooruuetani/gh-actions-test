@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.fixture
-def lambda_context():
+def lambda_context():  # test
     @dataclass
     class LambdaContext:
         def __init__(self):

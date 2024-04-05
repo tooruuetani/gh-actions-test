@@ -1,0 +1,48 @@
+name: "Install Python runtime"
+description: "Install Python runtime and cache"
+inputs:
+  dir:
+    description: "Working directory for installation"
+    required: true
+  version:
+    description: "Python version"
+    required: true
+  version-poetry:
+    description: "Poetry version"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.version }}
+        architecture: "x64"
+    - name: Save Python path
+      # 仮想環境を作成したときのPythonバージョンを取得するために実行
+      # マイナーバージョンが異なると仮想環境が壊れるため、バージョンをキャッシュキーに含める
+      run: which python3 > python3_path.txt
+      shell: bash
+      working-directory: ${{ inputs.dir }}
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: ${{ inputs.version-poetry }}
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        virtualenvs-path: ".venv"
+        installer-parallel: true
+      working-directory: ${{ inputs.dir }}
+    - name: Cache venv dependencies
+      uses: actions/cache@v4
+      id: python-venv-cache
+      with:
+        path: ".venv"
+        key: ${{ runner.os }}-python-venv-${{ hashFiles('**/poetry.lock', 'python3_path.txt') }}
+        restore-keys: ${{ runner.os }}-python-venv-
+      working-directory: ${{ inputs.dir }}
+    - name: Install dependencies
+      if: steps.python-venv-cache.outputs.cache-hit != 'true'
+      run: poetry install --no-root
+      shell: bash
+      working-directory: ${{ inputs.dir }}
