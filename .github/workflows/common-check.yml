@@ -70,6 +70,7 @@ jobs:
 
   check_code:
     needs:
+      - test_service_backend
       - test_service_frontend
     if: always()
     runs-on: ubuntu-latest
