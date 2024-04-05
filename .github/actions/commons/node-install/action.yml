@@ -20,7 +20,7 @@ runs:
       dir: ${{ inputs.dir }}
       with:
         path: "node_modules"
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-log.json') }}
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
     - name: Install Dependencies
       if: ${{ steps.node_modules_cache.outputs.cache-hit != 'true' }}
       dir: ${{ inputs.dir }}
