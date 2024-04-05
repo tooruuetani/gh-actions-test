@@ -9,10 +9,10 @@ runs:
   using: "composite"
   steps:
     - name: Check by prettier
-      run: npm run format
+      run: npx prettier --check src
       shell: bash
       working-directory: ${{ inputs.dir }}
     - name: Check by eslint
-      run: npm run lint
+      run: npx eslint --max-warnings=0 src
       shell: bash
       working-directory: ${{ inputs.dir }}
