@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "service"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aws-lambda-powertools = "2.36.0"
+jmespath = "1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.1.1"
+pytest-cov = "5.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath= ["src", "tests"]
+testpaths = ["tests",]
+filterwarnings = ["ignore::DeprecationWarning",]
+
+[tool.ruff]
+lint.ignore = ["E203","W293"]
+lint.select = ["I","E","F","W"]
+lint.unfixable = ["F401"]
+line-length = 119
+src = ["src", "tests"]
+target-version = "py311"

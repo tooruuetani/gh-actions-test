@@ -27,6 +27,11 @@
   "files.trimTrailingWhitespace": true,
   /*python*/
   "python.languageServer": "Pylance",
+  "python.analysis.extraPaths": [
+    "service/backend/src",
+    "service/backend/tests",
+  ],
+  "python.venvPath": "service/.venv",
   /*yaml*/
   "yaml.format.printWidth": 119,
   "yaml.schemas": {
