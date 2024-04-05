@@ -27,7 +27,7 @@ runs:
     - name: Specify cache key
       id: specify_cache_key
       run: |
-        echo "hash=`echo ${{ hashfiles(inputs.dir/poetry.lock, inputs.dir/python3_path.txt) }}`" >> $GITHUB_OUTPUT
+        echo "hash=`echo ${{ hashfiles(${{inputs.dir}}/poetry.lock, ${{inputs.dir}}/python3_path.txt) }}`" >> $GITHUB_OUTPUT
       shell: bash
     - name: Install Poetry
       uses: snok/install-poetry@v1
