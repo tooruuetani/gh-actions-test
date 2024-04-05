@@ -45,7 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Python
-        uses: ./.github/actions/commons/python-install
+        uses: ./.github/actions/commons/python_install
         with:
           dir: service/backend
           version: "3.11"
@@ -63,7 +63,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Node.js
-        uses: ./.github/actions/commons/node-install
+        uses: ./.github/actions/commons/node_install
         with:
           dir: service/frontend
           version: "18"
