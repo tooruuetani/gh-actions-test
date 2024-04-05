@@ -27,8 +27,9 @@ runs:
     - name: Specify cache key
       id: specify_cache_key
       run: |
-        echo "key=`echo ${{ inputs.dir }}/poetry.lock`" >> $GITHUB_OUTPUT
-        echo "ver=`echo ${{ inputs.dir }}/python3_path.txt`" >> $GITHUB_OUTPUT
+        key=${{ inputs.dir }}/poetry.lock
+        ver=${{ inputs.dir }}/python3_path.txt
+        echo "hash=`echo ${{ hashfiles($key, $ver) }}`" >> $GITHUB_OUTPUT
       shell: bash
     - name: Install Poetry
       uses: snok/install-poetry@v1
@@ -43,7 +44,7 @@ runs:
       id: python-venv-cache
       with:
         path: "${{ inputs.dir }}/.venv"
-        key: ${{ runner.os }}-python-venv-${{ hashFiles(steps.specify_cache_key.key, steps.specify_cache_key.ver) }}
+        key: ${{ runner.os }}-python-venv-${{ steps.specify_cache_key.hash }}
         restore-keys: ${{ runner.os }}-python-venv-
     - name: Install dependencies
       if: steps.python-venv-cache.outputs.cache-hit != 'true'
