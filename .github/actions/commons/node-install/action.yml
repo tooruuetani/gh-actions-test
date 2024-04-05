@@ -17,6 +17,7 @@ runs:
     - name: Specify cache key
       id: specify_cache_key
       run: echo "key=$(echo ${{ inputs.dir }}/package-lock.json" >> $GITHUB_OUTPUT
+      shell: bash
     - name: Cache node_modules
       uses: actions/cache@v4
       id: node_modules_cache
@@ -25,6 +26,6 @@ runs:
         key: ${{ runner.os }}-node-modules-${{ hashFiles(steps.specify_cache_key.key) }}
     - name: Install Dependencies
       if: ${{ steps.node_modules_cache.outputs.cache-hit != 'true' }}
-      dir: ${{ inputs.dir }}
+      working-directory: ${{ inputs.dir }}
       run: npm ci
       shell: bash
