@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Set up Python and dependencies
         uses: ./.github/actions/commons/python_install
         with:
           dir: service/backend
@@ -62,7 +62,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Node.js
+      - name: Set up Node.js and dependencies
         uses: ./.github/actions/commons/node_install
         with:
           dir: service/frontend
