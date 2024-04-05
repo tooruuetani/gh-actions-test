@@ -18,8 +18,8 @@ runs:
     - name: Specify cache key
       id: specify_cache_key
       run: |
-        key=${{ inputs.dir }}/package-lock.json
-        echo "hash=`echo ${{ hashFiles($key) }}`" >> $GITHUB_OUTPUT
+        echo "key=`echo ${{ inputs.dir }}/package-lock.json`" > $GITHUB_OUTPUT
+        echo "hash=`echo ${{ hashFiles(key) }}`" >> $GITHUB_OUTPUT
       shell: bash
     - name: Cache node_modules
       uses: actions/cache@v4

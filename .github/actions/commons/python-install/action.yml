@@ -27,8 +27,8 @@ runs:
     - name: Specify cache key
       id: specify_cache_key
       run: |
-        key=${{ inputs.dir }}/poetry.lock
-        ver=${{ inputs.dir }}/python3_path.txt
+        echo "key=`echo ${{ inputs.dir }}/poetry.lock`" >> $GITHUB_ENV
+        echo "ver=`echo ${{ inputs.dir }}/python3_path.txt`" >> $GITHUB_ENV
         echo "hash=`echo ${{ hashfiles($key, $ver) }}`" >> $GITHUB_OUTPUT
       shell: bash
     - name: Install Poetry
