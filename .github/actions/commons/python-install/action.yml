@@ -42,7 +42,7 @@ runs:
       uses: actions/cache@v4
       id: python-venv-cache
       with:
-        path: ".venv"
+        path: "${{ inputs.dir }}/.venv"
         key: ${{ runner.os }}-python-venv-${{ hashFiles(steps.specify_cache_key.key, steps.specify_cache_key.ver) }}
         restore-keys: ${{ runner.os }}-python-venv-
     - name: Install dependencies
