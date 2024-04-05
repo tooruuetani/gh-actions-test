@@ -26,6 +26,12 @@ jobs:
               - 'service/backend/src/**/*.py'
               - 'service/backend/tests/*.py'
               - 'service/backend/tests/**/*.py'
+            service_frontend:
+              - "service/frontend/package.json"
+              - "service/frontend/package-lock.json"
+              - "service/frontend/src/*"
+              - "service/frontend/tests/*"
+              - "service/frontend/public/*"
 
   test_service_frontend:
     needs:
