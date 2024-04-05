@@ -25,7 +25,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.dir }}
     - name: Specify cache key
-      id: cache
+      id: cache_prepare
       run: |
         HASH=${{ hashFiles('**/poetry.lock', '**/python3_path.txt') }}
         echo "hash=$HASH" >> $GITHUB_OUTPUT
@@ -41,13 +41,16 @@ runs:
         installer-parallel: true
     - name: Cache venv dependencies
       uses: actions/cache@v4
-      id: python-venv-cache
+      id: cache
       with:
         path: "${{ inputs.dir }}/.venv"
-        key: ${{ runner.os }}-python-venv-${{ steps.cache.hash }}
-        restore-keys: ${{ runner.os }}-python-venv-
+        key: "${{ runner.os }}-python-venv-${{ steps.cache_prepare.hash }}"
+        restore-keys: ${{ runner.os }}-python-venv-"
+    - name: Echo cache result
+      run: echo "Cache hit=${{ steps.cache.outputs.cache-hit }}"
+      shell: bash
     - name: Install dependencies
-      if: steps.python-venv-cache.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true'
       run: poetry install --no-root
       shell: bash
       working-directory: ${{ inputs.dir }}

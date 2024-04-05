@@ -16,7 +16,7 @@ runs:
       with:
         node-version: ${{ inputs.version }}
     - name: Specify cache key
-      id: cache
+      id: cache_prepare
       run: |
         HASH=${{ hashFiles('**/package-lock.json') }}
         echo "hash=$HASH" >> $GITHUB_OUTPUT
@@ -24,12 +24,15 @@ runs:
       working-directory: ${{ inputs.dir }}
     - name: Cache node_modules
       uses: actions/cache@v4
-      id: node_modules_cache
+      id: cache
       with:
         path: "${{ inputs.dir }}/node_modules"
-        key: ${{ runner.os }}-node-modules-${{ steps.cache.hash }}
+        key: ${{ runner.os }}-node-modules-${{ steps.cache_prepare.hash }}
+    - name: Echo cache result
+      run: echo "Cache hit=${{ steps.cache.outputs.cache-hit }}"
+      shell: bash
     - name: Install Dependencies
-      if: ${{ steps.node_modules_cache.outputs.cache-hit != 'true' }}
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       working-directory: ${{ inputs.dir }}
       run: npm ci
       shell: bash
