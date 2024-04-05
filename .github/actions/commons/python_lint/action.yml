@@ -9,7 +9,7 @@ runs:
   using: "composite"
   steps:
     - name: Install dependencies
-      run: poetry install --no-root
+      run: poetry install ruff
       shell: bash
       working-directory: ${{ inputs.dir }}
     - name: Check by ruff
