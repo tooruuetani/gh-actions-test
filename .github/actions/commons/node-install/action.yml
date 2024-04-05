@@ -18,7 +18,8 @@ runs:
     - name: Specify cache key
       id: cache
       run: |
-        echo "hash=`echo ${{ hashFiles('package-lock.json') }}`" >> $GITHUB_OUTPUT
+        HASH=${{ hashFiles('package-lock.json') }}
+        echo "hash=$HASH" >> $GITHUB_OUTPUT
       shell: bash
       working-directory: ${{ inputs.dir }}
     - name: Cache node_modules
