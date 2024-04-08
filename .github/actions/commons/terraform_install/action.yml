@@ -1,0 +1,45 @@
+name: "Install terraform binary, then init"
+description: "Install terraform binary, then init"
+inputs:
+  args_init:
+    description: "Arguments for terraform init"
+    default: ""
+  dir:
+    description: "Working directory for terraform"
+  need_output_json:
+    description: "If true, output terraform result in json format"
+    default: "false"
+  need_tfcmt:
+    description: "If true, install tfcmt"
+    default: "false"
+  version_tfcmt:
+    description: "Version of tfcmt"
+    default: "v4.9.0"
+    required: false
+outputs:
+  json:
+    description: "Json of the terraform output"
+    value: "${{ inputs.need_output_json == 'true' ? steps.export.outputs.json : '{}' }}"
+runs:
+  using: "composite"
+  steps:
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+    - name: Terraform init
+      run: terraform init ${{ inputs.args_init }}
+      working-directory: ${{ inputs.dir }}
+      shell: bash
+    - name: Install tfcmt if need_tfcmt is true
+      if: ${{ inputs.need_tfcmt == 'true' }}
+      run: |
+        sudo curl -fL -o tfcmt.tar.gz https://github.com/suzuki-shunsuke/tfcmt/releases/download/$TFCMT_VERSION/tfcmt_linux_amd64.tar.gz
+        sudo tar -C /usr/bin -xzf ./tfcmt.tar.gz
+      env:
+        TFCMT_VERSION: ${{ inputs.version_tfcmt }}
+      shell: bash
+    - name: Export
+      if: ${{ inputs.need_output_json == 'true' }}
+      id: export
+      working-directory: ${{ inputs.workdir }}
+      run: echo "json=`terraform-bin output -json`" >> $GITHUB_OUTPUT
+      shell: bash
