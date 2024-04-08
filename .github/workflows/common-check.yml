@@ -122,7 +122,7 @@ jobs:
         uses: ./.github/actions/commons/terraform_plan
         with:
           dir: terraform
-          layer: "dev/terraform"
+          label: "dev/terraform"
           need_install: "true"
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}

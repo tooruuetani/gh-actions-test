@@ -30,7 +30,7 @@ runs:
   steps:
     - name: Install Terraform if need_install is true
       if: ${{ inputs.need_install == 'true' }}
-      uses: ./github/actions/commons/terraform_install
+      uses: ./.github/actions/commons/terraform_install
       with:
         args_init: ${{ inputs.args_init }}
         dir: ${{ inputs.dir }}
