@@ -19,7 +19,7 @@ inputs:
 outputs:
   json:
     description: "Json of the terraform output"
-    value: "${{ inputs.need_output_json == 'true' ? steps.export.outputs.json : '{}' }}"
+    value: ${{ steps.export.outputs.json }}
 runs:
   using: "composite"
   steps:
