@@ -106,6 +106,7 @@ jobs:
     needs:
       - changes
     if: ${{ needs.changes.outputs.terraform_dev == 'true' }}
+    permissions: write-all
     runs-on: ubuntu-latest
     defaults:
       run:
