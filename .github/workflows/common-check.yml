@@ -13,6 +13,7 @@ jobs:
     outputs:
       service_backend: ${{ steps.filter.outputs.service_backend }}
       service_frontend: ${{ steps.filter.outputs.service_frontend }}
+      terraform_dev: ${{ steps.filter.outputs.terraform_dev }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -32,6 +33,8 @@ jobs:
               - "service/frontend/src/*"
               - "service/frontend/tests/*"
               - "service/frontend/public/*"
+            terraform_dev:
+              - "terraform/*.tf"
 
   service_backend_lint:
     needs:
@@ -99,11 +102,34 @@ jobs:
         with:
           dir: service/frontend
 
+  terraform_plan:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.terraform_dev == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN_DEV }}
+          aws-region: ap-northeast-1
+      - name: Run terraform plan
+        uses: ./.github/actions/commons/terraform_install
+        with:
+          dir: terraform
+          need_install: "true"
+          need_tfcmt: "true"
+
   check_code:
     needs:
       - service_backend_lint
       - service_backend_test
       - service_frontend_lint
+      - terraform_plan
     if: always()
     runs-on: ubuntu-latest
     steps:
