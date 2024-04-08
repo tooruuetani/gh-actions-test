@@ -6,7 +6,7 @@ on:
       - main
     types: [opened, synchronize, reopened]
 env:
-  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/rpf-infrastructure-role-dev
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-274-infrastructure-role-dev
 jobs:
   changes:
     runs-on: ubuntu-latest
