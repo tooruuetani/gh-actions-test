@@ -1,0 +1,51 @@
+name: "Run terraform plan"
+description: "Run terraform plan"
+inputs:
+  args_init:
+    description: "Arguments for terraform init"
+    default: ""
+  args_plan:
+    description: "Arguments for terraform plan"
+    default: ""
+  dir:
+    description: "Working directory for terraform"
+  label:
+    description: "Label of the environment"
+    default: "dev/infrastructure"
+    required: false
+  need_install:
+    description: "If true, install terraform binary"
+    default: "false"
+  need_tfcmt:
+    description: "If true, install tfcmt"
+    default: "false"
+  token:
+    description: "GitHub token, required if need_tfcmt is true"
+  version_tfcmt:
+    description: "Version of tfcmt"
+    default: "v4.9.0"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Install Terraform if need_install is true
+      if: ${{ inputs.need_install == 'true' }}
+      uses: ./.github/actions/commons/terraform_install
+      with:
+        args_init: ${{ inputs.args_init }}
+        dir: ${{ inputs.dir }}
+        need_output_json: "false"
+        need_tfcmt: ${{ inputs.need_tfcmt }}
+        version_tfcmt: ${{ inputs.version_tfcmt }}
+    - name: Terraform plan with tfcmt
+      if: ${{ inputs.need_tfcmt == 'true' }}
+      run: tfcmt -var "target:${{ inputs.label }}" plan -- terraform plan -no-color -input=false ${{ inputs.args_plan }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      working-directory: ${{ inputs.dir }}
+      shell: bash
+    - name: Terraform plan without tfcmt
+      if: ${{ inputs.need_tfcmt != 'true' }}
+      run: terraform plan -no-color -input=false ${{ inputs.args_plan }}
+      working-directory: ${{ inputs.dir }}
+      shell: bash

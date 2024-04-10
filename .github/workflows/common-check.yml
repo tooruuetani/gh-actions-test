@@ -1,0 +1,144 @@
+name: common-check
+run-name: Common check codes for "${{ github.head_ref }}@${{ github.event.pull_request.head.sha }}"
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+env:
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-274-infrastructure-role-dev
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      service_backend: ${{ steps.filter.outputs.service_backend }}
+      service_frontend: ${{ steps.filter.outputs.service_frontend }}
+      terraform_dev: ${{ steps.filter.outputs.terraform_dev }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            service_backend:
+              - 'service/pyproject.toml'
+              - 'service/poetry.lock'
+              - 'service/backend/src/*.py'
+              - 'service/backend/src/**/*.py'
+              - 'service/backend/tests/*.py'
+              - 'service/backend/tests/**/*.py'
+            service_frontend:
+              - "service/frontend/package.json"
+              - "service/frontend/package-lock.json"
+              - "service/frontend/src/*"
+              - "service/frontend/tests/*"
+              - "service/frontend/public/*"
+            terraform_dev:
+              - "terraform/*.tf"
+
+  service_backend_lint:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.service_backend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python and dependencies
+        uses: ./.github/actions/commons/python_install
+        with:
+          dir: service/backend
+          version: "3.11"
+          version-poetry: "1.8.2"
+      - name: Run lint/format
+        uses: ./.github/actions/commons/python_lint
+        with:
+          dir: service/backend
+
+  service_backend_test:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.service_backend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python and dependencies
+        uses: ./.github/actions/commons/python_install
+        with:
+          dir: service/backend
+          version: "3.11"
+          version-poetry: "1.8.2"
+      - name: Run tests
+        uses: ./.github/actions/commons/python_test
+        with:
+          dir: service/backend
+          need_comment: "true"
+
+  service_frontend_lint:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.service_frontend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js and dependencies
+        uses: ./.github/actions/commons/node_install
+        with:
+          dir: service/frontend
+          version: "18"
+      - name: Run lint/format
+        uses: ./.github/actions/commons/node_lint
+        with:
+          dir: service/frontend
+
+  terraform_plan:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.terraform_dev == 'true' }}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN_DEV }}
+          aws-region: ap-northeast-1
+      - name: Run terraform plan
+        uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: terraform
+          label: "dev/terraform"
+          need_install: "true"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  check_code:
+    needs:
+      - service_backend_lint
+      - service_backend_test
+      - service_frontend_lint
+      - terraform_plan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force failure
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: echo "Failed or canceled" && exit 1
+      - run: echo "$json"
+        env:
+          json: ${{ toJSON(needs) }}
