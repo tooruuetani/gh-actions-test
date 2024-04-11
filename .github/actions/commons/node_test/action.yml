@@ -14,6 +14,7 @@ runs:
     - name: Test
       id: test
       continue-on-error: true
+      # json-summary はコンソール出力に向いていないため、設定を変更している
       run: |
         sed -i 's/reporter: \["text"\],/reporter: ["text", "json-summary"],/' vite.config.ts
         set -o pipefail
