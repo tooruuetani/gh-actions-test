@@ -69,7 +69,7 @@ runs:
         lambroll_envfile: ${{ inputs.lambroll_envfile }}
         lambroll_keep_versions: ${{ inputs.lambroll_keep_versions }}
         tfstate_url: ${{ inputs.tfstate_url }}
-        version: ${{ inputs.image_sha }}
+        version: ${{ inputs.version }}
     - uses: ./.github/actions/commons/ecr_tagging
       with:
         repository_name: ${{ inputs.repository_name }}
