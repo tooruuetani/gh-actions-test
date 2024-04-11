@@ -20,7 +20,7 @@ locals {
 }
 
 resource "aws_ecr_repository" "main" {
-  name                 = "test-274-ecr-repository"
+  name                 = "test-293-ecr-repository"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
