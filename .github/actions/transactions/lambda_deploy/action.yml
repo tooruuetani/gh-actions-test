@@ -64,7 +64,7 @@ runs:
     - uses: ./.github/actions/commons/lambroll_deploy
       with:
         dir: ${{ inputs.dir_lambroll }}
-        function_name: ${{ inputs.function_names }}
+        function_names: ${{ inputs.function_names }}
         lambroll_alias: ${{ inputs.lambroll_alias }}
         lambroll_envfile: ${{ inputs.lambroll_envfile }}
         lambroll_keep_versions: ${{ inputs.lambroll_keep_versions }}
