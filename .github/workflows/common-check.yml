@@ -47,16 +47,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python and dependencies
-        uses: ./.github/actions/commons/python_install
+      - name: Python lint and format
+        uses: ./.github/actions/transactions/python_lint
         with:
           dir: service/backend
           version: "3.11"
           version-poetry: "1.8.2"
-      - name: Run lint/format
-        uses: ./.github/actions/commons/python_lint
-        with:
-          dir: service/backend
 
   service_backend_test:
     needs:
@@ -69,17 +65,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python and dependencies
-        uses: ./.github/actions/commons/python_install
-        with:
-          dir: service/backend
-          version: "3.11"
-          version-poetry: "1.8.2"
-      - name: Run tests
-        uses: ./.github/actions/commons/python_test
+      - name: Python test
+        uses: ./.github/actions/transactions/python_test
         with:
           dir: service/backend
           need_comment: "true"
+          version: "3.11"
+          version-poetry: "1.8.2"
 
   service_frontend_lint:
     needs:
