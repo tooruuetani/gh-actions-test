@@ -5,9 +5,6 @@ inputs:
   dir:
     description: "Working directory for installation"
     required: true
-  need_comment:
-    description: "Whether to comment the result"
-    default: "true"
   version:
     description: "Node.js version"
     default: "18"
@@ -18,7 +15,6 @@ runs:
       with:
         dir: ${{ inputs.dir }}
         version: ${{ inputs.version }}
-    - uses: ./.github/actions/commons/node_test
+    - uses: ./.github/actions/commons/node_lint
       with:
         dir: ${{ inputs.dir }}
-        need_comment: ${{ inputs.need_comment }}
