@@ -6,6 +6,7 @@ on:
       - main
     types: [opened, synchronize, reopened]
 env:
+  AWS_REGION: ap-northeast-1
   AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-274-infrastructure-role-dev
 jobs:
   changes:
@@ -47,16 +48,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python and dependencies
-        uses: ./.github/actions/commons/python_install
+      - name: Python lint and format
+        uses: ./.github/actions/transactions/python_lint
         with:
           dir: service/backend
           version: "3.11"
-          version-poetry: "1.8.2"
-      - name: Run lint/format
-        uses: ./.github/actions/commons/python_lint
-        with:
-          dir: service/backend
+          version_poetry: "1.8.2"
 
   service_backend_test:
     needs:
@@ -69,17 +66,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python and dependencies
-        uses: ./.github/actions/commons/python_install
-        with:
-          dir: service/backend
-          version: "3.11"
-          version-poetry: "1.8.2"
-      - name: Run tests
-        uses: ./.github/actions/commons/python_test
+      - name: Python test
+        uses: ./.github/actions/transactions/python_test
         with:
           dir: service/backend
           need_comment: "true"
+          version: "3.11"
+          version_poetry: "1.8.2"
 
   service_frontend_lint:
     needs:
@@ -92,15 +85,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Node.js and dependencies
-        uses: ./.github/actions/commons/node_install
+      - name: Node.js lint and format
+        uses: ./.github/actions/transactions/node_lint
         with:
           dir: service/frontend
           version: "18"
-      - name: Run lint/format
-        uses: ./.github/actions/commons/node_lint
+
+  service_frontend_test:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.service_frontend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node.js test
+        uses: ./.github/actions/transactions/node_test
         with:
           dir: service/frontend
+          need_comment: "true"
+          version: "18"
 
   terraform_plan:
     needs:
@@ -114,24 +121,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN_DEV }}
-          aws-region: ap-northeast-1
       - name: Run terraform plan
-        uses: ./.github/actions/commons/terraform_plan
+        uses: ./.github/actions/transactions/terraform_plan
         with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
           dir: terraform
-          label: "dev/terraform"
-          need_install: "true"
+          label: "terraform"
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
+          version_tfcmt: "v4.9.0"
 
   check_code:
     needs:
       - service_backend_lint
       - service_backend_test
       - service_frontend_lint
+      - service_frontend_test
       - terraform_plan
     if: always()
     runs-on: ubuntu-latest

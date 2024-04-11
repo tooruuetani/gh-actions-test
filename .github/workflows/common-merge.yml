@@ -1,0 +1,77 @@
+name: common-merge
+run-name: Common merge codes for "${{ github.head_ref }}@${{ github.event.pull_request.head.sha }}"
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/rpf-infrastructure-role-dev
+
+jobs:
+  changes:
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    outputs:
+      service_backend: ${{ steps.filter.outputs.service_backend }}
+      service_frontend: ${{ steps.filter.outputs.service_frontend }}
+      common_terraform_dev: ${{ steps.filter.outputs.terraform_dev }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            service_backend:
+              - 'service/pyproject.toml'
+              - 'service/poetry.lock'
+              - 'service/backend/src/*.py'
+              - 'service/backend/src/**/*.py'
+              - 'service/backend/tests/*.py'
+              - 'service/backend/tests/**/*.py'
+            service_frontend:
+              - "service/frontend/package.json"
+              - "service/frontend/package-lock.json"
+              - "service/frontend/src/*"
+              - "service/frontend/tests/*"
+              - "service/frontend/public/*"
+            terraform_dev:
+              - "terraform/*.tf"
+
+  common_terraform_apply_dev:
+    needs: [changes]
+    if: ${{ needs.changes.outputs.common_terraform_dev == 'true' }}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/transactions/terraform_apply
+        with:
+          aws_region: "ap-northeast-1"
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          dir: terraform
+          label: "terraform"
+          need_tfcmt: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  clean:
+    needs:
+      - common_terraform_apply_dev
+    if: ${{ failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          ACTION_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+        with:
+          script: |
+            const { ACTOR } = process.env
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `@${{ env.ACTOR }} Merge task has failed.\nSee ${{ env.ACTION_URL }}`
+            })

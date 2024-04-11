@@ -1,13 +1,13 @@
 name: "Install Node.js runtime"
-description: "Install Node.js runtime and cache node_modules"
+description: |
+  Node.js をインストールし、依存ライブラリをインストールします。
 inputs:
   dir:
     description: "Working directory for installation"
     required: true
   version:
     description: "Node.js version"
-    required: true
-
+    default: "18"
 runs:
   using: "composite"
   steps:
@@ -27,7 +27,7 @@ runs:
       id: cache
       with:
         path: "${{ inputs.dir }}/node_modules"
-        key: ${{ runner.os }}-node-modules-${{ steps.cache_prepare.hash }}
+        key: ${{ runner.os }}-node-modules-${{ steps.cache_prepare.outputs.hash }}
     - name: Echo cache result
       run: echo "Cache hit=${{ steps.cache.outputs.cache-hit }}"
       shell: bash

@@ -6,5 +6,10 @@ export default defineConfig({
   plugins: [react()],
   test: {
     include: ["**/*.test.ts", "**/*.test.tsx"],
+    reporters: ["default"],
+    coverage: {
+      reporter: ["text"],
+      all: true,
+    },
   },
 });

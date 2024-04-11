@@ -1,28 +1,32 @@
 name: "Install terraform binary, then init"
-description: "Install terraform binary, then init"
+description: |
+  Terraform をインストールし、 init を実行します。
 inputs:
   args_init:
     description: "Arguments for terraform init"
     default: ""
+  aws_region:
+    description: "The AWS region"
+    default: "ap-northeast-1"
+  aws_role:
+    description: "The AWS role ARN"
+    default: ""
   dir:
     description: "Working directory for terraform"
-  need_output_json:
-    description: "If true, output terraform result in json format"
-    default: "false"
   need_tfcmt:
     description: "If true, install tfcmt"
     default: "false"
   version_tfcmt:
     description: "Version of tfcmt"
     default: "v4.9.0"
-    required: false
-outputs:
-  json:
-    description: "Json of the terraform output"
-    value: ${{ steps.export.outputs.json }}
 runs:
   using: "composite"
   steps:
+    - uses: aws-actions/configure-aws-credentials@v4
+      if: ${{ inputs.aws_role != '' }}
+      with:
+        role-to-assume: ${{ inputs.aws_role }}
+        aws-region: ${{ inputs.aws_region }}
     - name: Install Terraform
       uses: hashicorp/setup-terraform@v3
     - name: Terraform init
@@ -36,10 +40,4 @@ runs:
         sudo tar -C /usr/bin -xzf ./tfcmt.tar.gz
       env:
         TFCMT_VERSION: ${{ inputs.version_tfcmt }}
-      shell: bash
-    - name: Export
-      if: ${{ inputs.need_output_json == 'true' }}
-      id: export
-      working-directory: ${{ inputs.workdir }}
-      run: echo "json=`terraform-bin output -json`" >> $GITHUB_OUTPUT
       shell: bash

@@ -1,5 +1,6 @@
-name: "Run pytest"
-description: "Run pytest, then comment if needed"
+name: "Run pytest, then comment to PR"
+description: |
+  Poetry を使用してテストを実行し、テスト結果をPRにコメントします。
 inputs:
   dir:
     description: "Working directory for installation"
@@ -7,13 +8,12 @@ inputs:
   need_comment:
     description: "Whether to comment the result"
     default: "true"
-
 runs:
   using: "composite"
   steps:
     - name: Check by pytest
       id: pytest
-      continue-on-error: true
+      continue-on-error: true # テストに失敗してもPRにコメントするため、エラーを無視する
       env:
         PYTHONPATH: src
       run: |

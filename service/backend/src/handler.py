@@ -10,4 +10,4 @@ app = APIGatewayRestResolver()
 
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
 def lambda_handler(event: dict, context: LambdaContext) -> dict:
-    return app.resolve(event, context)
+    return app.resolve(event, context)  # test

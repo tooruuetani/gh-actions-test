@@ -1,0 +1,48 @@
+name: "Install terraform, then run terraform plan"
+description: |
+  Terraform をインストールし、 terraform plan を実行します。
+inputs:
+  args_init:
+    description: "Arguments for terraform init"
+    default: ""
+  args_plan:
+    description: "Arguments for terraform plan"
+    default: ""
+  aws_region:
+    description: "The AWS region"
+    default: "ap-northeast-1"
+  aws_role:
+    description: "The AWS role ARN"
+    default: ""
+  dir:
+    description: "Working directory for terraform"
+  label:
+    description: "Label of the environment"
+    default: "dev/infrastructure"
+    required: false
+  need_tfcmt:
+    description: "If true, install tfcmt"
+    default: "false"
+  token:
+    description: "GitHub token, required if need_tfcmt is true"
+  version_tfcmt:
+    description: "Version of tfcmt"
+    default: "v4.9.0"
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/commons/terraform_install
+      with:
+        args_init: ${{ inputs.args_init }}
+        aws_region: ${{ inputs.aws_region }}
+        aws_role: ${{ inputs.aws_role }}
+        dir: ${{ inputs.dir }}
+        need_tfcmt: ${{ inputs.need_tfcmt }}
+        version_tfcmt: ${{ inputs.version_tfcmt }}
+    - uses: ./.github/actions/commons/terraform_plan
+      with:
+        args_plan: ${{ inputs.args_plan }}
+        dir: ${{ inputs.dir }}
+        label: ${{ inputs.label }}
+        need_tfcmt: ${{ inputs.need_tfcmt }}
+        token: ${{ inputs.token }}
