@@ -44,6 +44,7 @@ runs:
         VERSION_SHA=$VERSION-${{ inputs.sha }}
         echo VITE_VERSION_SHA=$VERSION_SHA>.env
         echo VITE_AWS_REGION=${{ inputs.aws_region }}>>.env
+      shell: bash
     - name: Install Node.js
       uses: ./.github/actions/commons/node_install
       with:

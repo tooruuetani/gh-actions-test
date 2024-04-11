@@ -110,6 +110,7 @@ jobs:
       - changes
       - common_terraform_apply_dev
       - service_backend_deploy_dev
+      - service_backend_frontend_dev
     if: ${{ failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
