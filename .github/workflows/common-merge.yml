@@ -62,9 +62,6 @@ jobs:
     if: ${{ !failure() }}
     permissions: write-all
     runs-on: ubuntu-latest
-    env:
-      DIR_LAMBROLL: service/backend/lambroll
-      STAGE: dev
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,7 +69,7 @@ jobs:
         uses: ./.github/actions/context_to_main
         id: context
       - name: Update lambda function
-        uses: ./.github/actions/transactions/lambda_deploy
+        uses: ./.github/actions/transactions/backend_deploy
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
@@ -84,6 +81,29 @@ jobs:
           lambroll_envfile: "dev.env"
           repository_name: "rpf-account-lambda-feature293"
           tfstate_url: "s3://test-274-terraform-state-dev/infrastructure.tfstate"
+
+  service_backend_frontend_dev:
+    needs:
+      - changes
+      - common_terraform_apply_dev
+    if: ${{ !failure() }}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_main
+        id: context
+      - name: Update lambda function
+        uses: ./.github/actions/transactions/frontend_deploy
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          dir_node: "service/frontend"
+          dir_terraform: "terraform"
+          sha: ${{ steps.context.outputs.sha }}
+          version_node: "18"
 
   notify_failed:
     needs:

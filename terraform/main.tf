@@ -207,6 +207,9 @@ resource "aws_lambda_function" "main" {
   }
 }
 
+output "cloudfront_bucket" {
+  value = aws_s3_bucket.main.bucket
+}
 output "cloudfront_id" {
   value = aws_cloudfront_distribution.main.id
 }
