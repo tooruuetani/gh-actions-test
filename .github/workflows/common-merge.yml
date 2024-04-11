@@ -80,7 +80,7 @@ jobs:
           dir_lambroll: "service/backend/lambroll"
           function_names: "webapp"
           image_sha: ${{ steps.context.outputs.sha }}
-          lambroll_alias: "test293"
+          lambroll_alias: "dev"
           lambroll_envfile: "dev.env"
           repository_name: "rpf-account-lambda-feature293"
           tfstate_url: "s3://test-274-terraform-state-dev/infrastructure.tfstate"
