@@ -19,6 +19,9 @@ inputs:
   sha:
     description: "The SHA of the commit"
     required: true
+  version_app:
+    description: "The version of the application"
+    default: "1.0.0"
   version_node:
     description: "The version of Node.js"
     default: "18"
@@ -42,6 +45,7 @@ runs:
     - name: Inject version
       working-directory: ${{ inputs.dir_node }}
       run: |
+        VERSION=${{ inputs.version_app }}
         VERSION_SHA=$VERSION-${{ inputs.sha }}
         echo VITE_VERSION_SHA=$VERSION_SHA>.env
         echo VITE_AWS_REGION=${{ inputs.aws_region }}>>.env

@@ -82,7 +82,7 @@ jobs:
           repository_name: "rpf-account-lambda-feature293"
           tfstate_url: "s3://test-274-terraform-state-dev/infrastructure.tfstate"
 
-  service_backend_frontend_dev:
+  service_frontend_deploy_dev:
     needs:
       - changes
       - common_terraform_apply_dev
@@ -103,6 +103,7 @@ jobs:
           dir_node: "service/frontend"
           dir_terraform: "terraform"
           sha: ${{ steps.context.outputs.sha }}
+          version_app: ${{ steps.context.outputs.version }}
           version_node: "18"
 
   notify_failed:
@@ -110,7 +111,7 @@ jobs:
       - changes
       - common_terraform_apply_dev
       - service_backend_deploy_dev
-      - service_backend_frontend_dev
+      - service_frontend_deploy_dev
     if: ${{ failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
