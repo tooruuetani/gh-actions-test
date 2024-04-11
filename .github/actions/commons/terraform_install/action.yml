@@ -13,7 +13,6 @@ inputs:
   version_tfcmt:
     description: "Version of tfcmt"
     default: "v4.9.0"
-    required: false
 runs:
   using: "composite"
   steps:

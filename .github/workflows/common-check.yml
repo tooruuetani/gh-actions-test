@@ -6,6 +6,7 @@ on:
       - main
     types: [opened, synchronize, reopened]
 env:
+  AWS_REGION: ap-northeast-1
   AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-274-infrastructure-role-dev
 jobs:
   changes:
@@ -120,18 +121,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN_DEV }}
-          aws-region: ap-northeast-1
       - name: Run terraform plan
-        uses: ./.github/actions/commons/terraform_plan
+        uses: ./.github/actions/transactions/terraform_plan
         with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
           dir: terraform
-          label: "dev/terraform"
-          need_install: "true"
+          label: "terraform"
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
+          version_tfcmt: "v4.9.0"
 
   check_code:
     needs:
