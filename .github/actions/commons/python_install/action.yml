@@ -45,7 +45,7 @@ runs:
       id: cache
       with:
         path: "${{ inputs.dir }}/.venv"
-        key: "${{ runner.os }}-python-venv-${{ steps.cache_prepare.hash }}"
+        key: "${{ runner.os }}-python-venv-${{ steps.cache_prepare.outputs.hash }}"
         restore-keys: ${{ runner.os }}-python-venv-"
     - name: Echo cache result
       run: echo "Cache hit=${{ steps.cache.outputs.cache-hit }}"

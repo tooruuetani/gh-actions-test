@@ -27,7 +27,7 @@ runs:
       id: cache
       with:
         path: "${{ inputs.dir }}/node_modules"
-        key: ${{ runner.os }}-node-modules-${{ steps.cache_prepare.hash }}
+        key: ${{ runner.os }}-node-modules-${{ steps.cache_prepare.outputs.hash }}
     - name: Echo cache result
       run: echo "Cache hit=${{ steps.cache.outputs.cache-hit }}"
       shell: bash
