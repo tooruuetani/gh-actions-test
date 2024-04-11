@@ -10,11 +10,9 @@ runs:
   steps:
     - name: Get SHA
       id: get-sha
-      env:
-        LONG_SHA: ${{ env.GITHUB_SHA }}
       run: |
-        echo [BASE_SHA] is selected.
-        SHORT_SHA=$(echo $BASE_SHA | cut -c -7)
+        echo [$GITHUB_SHA] is selected.
+        SHORT_SHA=$(echo $GITHUB_SHA | cut -c -7)
         echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
         echo sha=[$SHORT_SHA]
       shell: bash
