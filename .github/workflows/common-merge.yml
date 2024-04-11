@@ -56,9 +56,35 @@ jobs:
           need_tfcmt: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  service_backend_deploy_dev:
+    needs:
+      - changes
+    if: ${{ !failure() && needs.changes.outputs.service_backend == 'true' }}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    env:
+      DIR_LAMBROLL: service/backend/lambroll
+      STAGE: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Update lambda function
+        uses: ./.github/actions/transactions/lambda_deploy
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          dir_docker: "service/backend"
+          dir_lambroll: "service/backend/lambroll"
+          function_names: "webapp"
+          image_sha: ${{ github.event.pull_request.base.sha }}
+          lambda_alias: "test293"
+          repository_name: "rpf-account-lambda-feature293"
+          tfstate_url: "s3://test-274-terraform-state-dev/infrastructure.tfstate"
+
   notify_failed:
     needs:
       - common_terraform_apply_dev
+      - service_backend_deploy_dev
     if: ${{ failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:

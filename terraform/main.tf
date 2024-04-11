@@ -210,6 +210,12 @@ resource "aws_lambda_function" "main" {
 output "cloudfront_id" {
   value = aws_cloudfront_distribution.main.id
 }
+output "lambda_name" {
+  value = aws_lambda_function.main.function_name
+}
+output "lambda_role_arn" {
+  value = aws_iam_role.main.arn
+}
 output "repository_name" {
   value = aws_ecr_repository.main.name
 }
