@@ -1,6 +1,6 @@
 name: "Get context to merge to main"
 description: |
-  TPDP
+  現在実行中JOBのコンテキスト(SHA)を取得します。
 outputs:
   sha:
     description: "SHA"
@@ -11,7 +11,7 @@ runs:
     - name: Get SHA
       id: get-sha
       env:
-        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        LONG_SHA: ${{ env.GITHUB_SHA }}
       run: |
         echo [BASE_SHA] is selected.
         SHORT_SHA=$(echo $BASE_SHA | cut -c -7)

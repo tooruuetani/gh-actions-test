@@ -42,7 +42,7 @@ inputs:
     required: true
   version:
     description: "Version of lambroll"
-    default: "v0.14.2"
+    default: "v0.14.7"
     required: false
 runs:
   using: composite
