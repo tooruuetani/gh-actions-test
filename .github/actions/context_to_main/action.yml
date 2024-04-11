@@ -5,6 +5,9 @@ outputs:
   sha:
     description: "SHA"
     value: ${{ steps.get-sha.outputs.sha }}
+  version:
+    description: "Version"
+    value: ${{ steps.get-version.outputs.version }}
 runs:
   using: "composite"
   steps:
@@ -15,4 +18,11 @@ runs:
         SHORT_SHA=$(echo $GITHUB_SHA | cut -c -7)
         echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
         echo sha=[$SHORT_SHA]
+      shell: bash
+    - name: Get version from VERSION
+      id: get-version
+      run: |
+        VERSION=$(cat VERSION)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo version=[$VERSION]
       shell: bash
