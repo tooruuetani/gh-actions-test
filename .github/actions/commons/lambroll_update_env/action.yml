@@ -1,5 +1,6 @@
 name: "Update lambda function env values"
-description: "Update lambda function env values"
+description: |
+  Lambroll が使用する .env ファイルを更新します。
 inputs:
   dir:
     description: "Working directory to execute lambroll"

@@ -1,5 +1,6 @@
 name: "Install Node.js runtime"
-description: "Install Node.js runtime and cache node_modules"
+description: |
+  Node.js をインストールし、依存ライブラリをインストールします。
 inputs:
   dir:
     description: "Working directory for installation"
@@ -7,7 +8,6 @@ inputs:
   version:
     description: "Node.js version"
     required: true
-
 runs:
   using: "composite"
   steps:

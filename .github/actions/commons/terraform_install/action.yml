@@ -1,14 +1,12 @@
 name: "Install terraform binary, then init"
-description: "Install terraform binary, then init"
+description: |
+  Terraform をインストールし、 init を実行します。
 inputs:
   args_init:
     description: "Arguments for terraform init"
     default: ""
   dir:
     description: "Working directory for terraform"
-  need_output_json:
-    description: "If true, output terraform result in json format"
-    default: "false"
   need_tfcmt:
     description: "If true, install tfcmt"
     default: "false"
@@ -16,10 +14,6 @@ inputs:
     description: "Version of tfcmt"
     default: "v4.9.0"
     required: false
-outputs:
-  json:
-    description: "Json of the terraform output"
-    value: ${{ steps.export.outputs.json }}
 runs:
   using: "composite"
   steps:
@@ -36,10 +30,4 @@ runs:
         sudo tar -C /usr/bin -xzf ./tfcmt.tar.gz
       env:
         TFCMT_VERSION: ${{ inputs.version_tfcmt }}
-      shell: bash
-    - name: Export
-      if: ${{ inputs.need_output_json == 'true' }}
-      id: export
-      working-directory: ${{ inputs.workdir }}
-      run: echo "json=`terraform-bin output -json`" >> $GITHUB_OUTPUT
       shell: bash

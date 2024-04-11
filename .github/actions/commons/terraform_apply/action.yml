@@ -4,46 +4,27 @@ inputs:
   args_apply:
     description: "Arguments for terraform apply"
     default: ""
-  args_init:
-    description: "Arguments for terraform init"
+  aws_region:
+    description: "The AWS region"
+    default: "ap-northeast-1"
+  aws_role:
+    description: "The AWS role ARN"
     default: ""
   dir:
     description: "Working directory for terraform"
-  label:
-    description: "Label of the environment"
-    default: "dev/infrastructure"
-    required: false
-  need_install:
-    description: "If true, install terraform binary"
-    default: "false"
-  need_output_json:
-    description: "If true, output terraform result in json format"
-    default: "false"
   need_tfcmt:
     description: "If true, install tfcmt"
     default: "false"
   token:
     description: "GitHub token, required if need_tfcmt is true"
-  version_tfcmt:
-    description: "Version of tfcmt"
-    default: "v4.9.0"
-    required: false
-outputs:
-  json:
-    description: "Json of the terraform output"
-    value: "${{ inputs.need_output_json == 'true' ? steps.export.outputs.json : '{}' }}"
 runs:
   using: "composite"
   steps:
-    - name: Install Terraform if need_install is true
-      if: ${{ inputs.need_install == 'true' }}
-      uses: ./.github/actions/commons/terraform_install
+    - uses: aws-actions/configure-aws-credentials@v4
+      if: ${{ inputs.aws_role != '' }}
       with:
-        args_init: ${{ inputs.args_init }}
-        dir: ${{ inputs.dir }}
-        need_output_json: "false"
-        need_tfcmt: ${{ inputs.need_tfcmt }}
-        version_tfcmt: ${{ inputs.version_tfcmt }}
+        role-to-assume: ${{ inputs.aws_role }}
+        aws-region: ${{ inputs.aws_region }}
     - name: Terraform apply auto with tfcmt
       if: ${{ inputs.need_tfcmt == 'true' }}
       run: tfcmt apply -- terraform apply -auto-approve ${{ inputs.args_apply }}
@@ -55,10 +36,4 @@ runs:
       if: ${{ inputs.need_tfcmt != 'true' }}
       run: terraform apply -auto-approve ${{ inputs.args_apply }}
       working-directory: ${{ inputs.dir }}
-      shell: bash
-    - name: Export
-      if: ${{ inputs.need_output_json == 'true' }}
-      id: export
-      working-directory: ${{ inputs.workdir }}
-      run: echo "json=`terraform-bin output -json`" >> $GITHUB_OUTPUT
       shell: bash

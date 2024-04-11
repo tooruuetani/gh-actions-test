@@ -1,10 +1,10 @@
 name: "Run eslint and prettier"
-description: "Run eslint and prettier"
+description: |
+  Prettier と Eslint を使用して、コードのフォーマットと静的解析を行います。
 inputs:
   dir:
     description: "Working directory for installation"
     required: true
-
 runs:
   using: "composite"
   steps:

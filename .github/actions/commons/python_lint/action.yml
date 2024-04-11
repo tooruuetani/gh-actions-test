@@ -1,10 +1,10 @@
 name: "Run ruff"
-description: "Run ruff"
+description: |
+  Poetry を使用して Ruff をインストールし、コードの静的解析を行います。
 inputs:
   dir:
     description: "Working directory for installation"
     required: true
-
 runs:
   using: "composite"
   steps:
