@@ -82,17 +82,11 @@ jobs:
       run:
         working-directory: service/frontend
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node.js and dependencies
-        uses: ./.github/actions/commons/node_install
+      - name: Node.js lint and format
+        uses: ./.github/actions/transactions/node_lint
         with:
           dir: service/frontend
           version: "18"
-      - name: Run lint/format
-        uses: ./.github/actions/commons/node_lint
-        with:
-          dir: service/frontend
 
   terraform_plan:
     needs:

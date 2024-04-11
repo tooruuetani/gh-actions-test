@@ -1,0 +1,20 @@
+name: "Install Node.js runtime, then run lint task"
+description: |
+  Node.js をインストールし、 lint タスクを実行します。
+inputs:
+  dir:
+    description: "Working directory for installation"
+    required: true
+  version:
+    description: "Node.js version"
+    default: "18"
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/commons/node_install
+      with:
+        dir: ${{ inputs.dir }}
+        version: ${{ inputs.version }}
+    - uses: ./.github/actions/commons/node_lint
+      with:
+        dir: ${{ inputs.dir }}
