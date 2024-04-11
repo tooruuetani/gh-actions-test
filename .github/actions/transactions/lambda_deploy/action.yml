@@ -59,7 +59,7 @@ runs:
       with:
         dir: ${{ inputs.dir_lambroll }}
         repository_name: ${{ inputs.repository_name }}
-        stage: ${{ inputs.lambda_alias }}
+        stage: ${{ inputs.lambroll_alias }}
         tag: ${{ inputs.image_sha }}
     - uses: ./.github/actions/commons/lambroll_deploy
       with:
