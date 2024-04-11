@@ -14,7 +14,7 @@
       "JWT_EXPIRED_DAYS": "30",
       "JWT_SECRET_KEY": "jwt-private-key-{{ must_env `STAGE` }}",
       "LOG_LEVEL": "INFO",
-      "REGION": "ap-northeast-1",
+      "REGION": "ap-northeast-1"
     }
   },
   "EphemeralStorage": {
