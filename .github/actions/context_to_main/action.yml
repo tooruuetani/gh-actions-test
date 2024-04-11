@@ -1,0 +1,20 @@
+name: "Get context to merge to main"
+description: |
+  TPDP
+outputs:
+  sha:
+    description: "SHA"
+    value: ${{ steps.get-sha.outputs.sha }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get SHA
+      id: get-sha
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        echo [BASE_SHA] is selected.
+        SHORT_SHA=$(echo $BASE_SHA | cut -c -7)
+        echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+        echo sha=[$SHORT_SHA]
+      shell: bash
