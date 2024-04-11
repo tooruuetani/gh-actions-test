@@ -82,6 +82,8 @@ jobs:
       run:
         working-directory: service/frontend
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Node.js lint and format
         uses: ./.github/actions/transactions/node_lint
         with:
