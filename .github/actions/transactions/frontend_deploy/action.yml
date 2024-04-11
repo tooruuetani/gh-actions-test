@@ -37,6 +37,7 @@ runs:
       run: |
         JSON=`terraform-bin output -json`
         echo "cloudfront_id=`echo $JSON | jq -r .cloudfront_id.value`" >> $GITHUB_OUTPUT
+        echo "cloudfront_bucket=`echo $JSON | jq -r .cloudfront_bucket.value`" >> $GITHUB_OUTPUT
       shell: bash
     - name: Inject version
       working-directory: ${{ inputs.dir_node }}
