@@ -138,6 +138,7 @@ jobs:
       - service_backend_lint
       - service_backend_test
       - service_frontend_lint
+      - service_frontend_test
       - terraform_plan
     if: always()
     runs-on: ubuntu-latest
