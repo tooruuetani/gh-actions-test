@@ -22,7 +22,7 @@ runs:
     - name: Get version from VERSION
       id: get-version
       run: |
-        VERSION=$(cat VERSION)
+        VERSION=$(head -n 1 VERSION)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo version=[$VERSION]
       shell: bash
