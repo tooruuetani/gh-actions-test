@@ -59,7 +59,8 @@ jobs:
   service_backend_deploy_dev:
     needs:
       - changes
-    if: ${{ !failure() && needs.changes.outputs.service_backend == 'true' }}
+      - common_terraform_apply_dev
+    if: ${{ !failure() }}
     permissions: write-all
     runs-on: ubuntu-latest
     env:
@@ -83,6 +84,7 @@ jobs:
 
   notify_failed:
     needs:
+      - changes
       - common_terraform_apply_dev
       - service_backend_deploy_dev
     if: ${{ failure() && !cancelled() }}
