@@ -5,6 +5,9 @@ inputs:
   dir:
     description: "Working directory for installation"
     required: true
+  need_comment:
+    description: "Whether to comment the result"
+    default: "true"
 runs:
   using: "composite"
   steps:
