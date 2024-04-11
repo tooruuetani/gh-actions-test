@@ -1,6 +1,7 @@
 __pycache__
 .terraform
 .venv
+coverage
 dist
 log
 node_modules
