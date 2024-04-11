@@ -16,10 +16,6 @@ inputs:
     default: ""
   dir:
     description: "Working directory for terraform"
-  label:
-    description: "Label of the environment"
-    default: "dev/infrastructure"
-    required: false
   need_tfcmt:
     description: "If true, install tfcmt"
     default: "false"
@@ -43,6 +39,5 @@ runs:
       with:
         args_apply: ${{ inputs.args_apply }}
         dir: ${{ inputs.dir }}
-        label: ${{ inputs.label }}
         need_tfcmt: ${{ inputs.need_tfcmt }}
         token: ${{ inputs.token }}
