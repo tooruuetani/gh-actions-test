@@ -1,0 +1,39 @@
+name: "Run test"
+description: |
+  vitest を使用して、テストを行います。
+inputs:
+  dir:
+    description: "Working directory for installation"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Test
+      id: test
+      continue-on-error: true
+      run: |
+        sed -i 's/reporter: \["text"\],/reporter: ["text", "json-summary"],/' vite.config.ts
+        set -o pipefail
+        npm run coverage -- --no-color --reporter=junit --outputFile.junit=junit.xml | tee vitest-coverage.txt
+      working-directory: ${{ inputs.dir }}
+      shell: bash
+    - name: Comment coverage on Pull-Request
+      uses: MishaKav/jest-coverage-comment@main
+      if: ${{ inputs.need_comment == 'true' }}
+      id: coverage-comment
+      with:
+        summary-title: Coverage for "${{ inputs.dir }}"
+        coverage-title: Coverage detail
+        coverage-summary-path: "${{ inputs.dir }}/coverage/coverage-summary.json"
+        badge-title: Coverage
+        coverage-path-prefix: "./${{ inputs.dir }}"
+        create-new-comment: true
+        coverage-path: "${{ inputs.dir }}/vitest-coverage.txt"
+        junitxml-path: "${{ inputs.dir }}/junit.xml"
+    - name: Error Handling
+      if: ${{ steps.vitest-coverage.outcome == 'failure' }}
+      run: |
+        echo "Error handling"
+        echo ${{ steps.vitest-coverage.outcome }}
+        exit 1
+      shell: bash

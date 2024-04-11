@@ -90,6 +90,24 @@ jobs:
           dir: service/frontend
           version: "18"
 
+  service_frontend_test:
+    needs:
+      - changes
+    if: ${{ needs.changes.outputs.service_frontend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node.js test
+        uses: ./.github/actions/transactions/node_test
+        with:
+          dir: service/frontend
+          need_comment: "true"
+          version: "18"
+
   terraform_plan:
     needs:
       - changes
