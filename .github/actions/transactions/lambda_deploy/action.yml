@@ -1,0 +1,77 @@
+name: "Build image, then deploy Lambda functions"
+description: |
+  以下のタスクを順次実行する。
+  * イメージをビルドして、タグ tag_sha を付与して ECR にアップロード
+  * Lambroll が使用する .env のアップデート
+  * Lambda をアップデート( image_sha を付与したイメージでデプロイして、エイリアス lambroll_alias を付与)
+inputs:
+  aws_region:
+    description: "The AWS region"
+    default: "ap-northeast-1"
+  aws_role:
+    description: "The AWS role ARN"
+    default: ""
+  dir_docker:
+    description: "Working directory for building docker image"
+    required: true
+  dir_lambroll:
+    description: "Working directory for lambroll"
+    required: true
+  function_names:
+    description: "Names of the lambda function"
+    required: true
+  image_sha:
+    description: "Image SHA"
+    required: true
+  lambroll_alias:
+    description: "Alias of the lambda function"
+    required: true
+  lambroll_envfile:
+    description: "Environment file for lambroll"
+    default: "dev.env"
+  lambroll_keep_versions:
+    description: "Keep version quantity of the lambda function"
+    default: "5"
+  repository_name:
+    description: "Repository name"
+  test_commands:
+    description: "Test commands for docker image if need"
+    default: ""
+  tfstate_url:
+    description: "S3 URL of the tfstate file"
+    required: true
+  version:
+    description: "Version of lambroll"
+    default: "v0.14.2"
+    required: false
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/commons/ecr_upload
+      with:
+        aws_region: ${{ inputs.aws_region }}
+        aws_role: ${{ inputs.aws_role }}
+        dir: ${{ inputs.dir_docker }}
+        repository_name: ${{ inputs.repository_name }}
+        tag: ${{ inputs.image_sha }}
+        test_commands: ${{ inputs.test_commands }}
+    - uses: ./.github/actions/commons/lambroll_update_env
+      with:
+        dir: ${{ inputs.dir_lambroll }}
+        repository_name: ${{ inputs.repository_name }}
+        stage: ${{ inputs.lambda_alias }}
+        tag: ${{ inputs.image_sha }}
+    - uses: ./.github/actions/commons/lambroll_deploy
+      with:
+        dir: ${{ inputs.dir_lambroll }}
+        function_name: ${{ inputs.function_names }}
+        lambroll_alias: ${{ inputs.lambroll_alias }}
+        lambroll_envfile: ${{ inputs.lambroll_envfile }}
+        lambroll_keep_versions: ${{ inputs.lambroll_keep_versions }}
+        tfstate_url: ${{ inputs.tfstate_url }}
+        version: ${{ inputs.image_sha }}
+    - uses: ./.github/actions/commons/ecr_tagging
+      with:
+        repository_name: ${{ inputs.repository_name }}
+        tag_origin: ${{ inputs.image_sha }}
+        tag_release: ${{ inputs.lambroll_alias }}
