@@ -39,7 +39,7 @@ runs:
         role-to-assume: ${{ inputs.aws_role }}
         aws-region: ${{ inputs.aws_region }}
     - name: Install lambroll
-      uses: fujiwara/lambroll@v0
+      uses: fujiwara/lambroll@v1
       with:
         version: ${{ inputs.version }}
     - name: Run lambroll deploy
