@@ -52,7 +52,7 @@ jobs:
         with:
           dir: service/backend
           version: "3.11"
-          version-poetry: "1.8.2"
+          version_poetry: "1.8.2"
 
   service_backend_test:
     needs:
@@ -71,7 +71,7 @@ jobs:
           dir: service/backend
           need_comment: "true"
           version: "3.11"
-          version-poetry: "1.8.2"
+          version_poetry: "1.8.2"
 
   service_frontend_lint:
     needs:
