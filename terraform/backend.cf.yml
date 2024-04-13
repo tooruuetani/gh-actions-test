@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: RPF infrastructure backend resources.
+
+Parameters:
+  Stage:
+    Description: Stage name of this environment(dev|stg|prod).
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+  SystemName:
+    Description: System name(only lowercase).
+    Type: String
+    Default: gha-test
+  TargetRepo:
+    Description: Target "username/repository-name" for Terraform.
+    Type: String
+    Default: tooruuetani/gh-actions-test
+  OIDCArn:
+    Description: GitHub server certificate thumbprint ofr OIDC.
+    Type: String
+    Default: arn:aws:iam::REPLACE_ME:oidc-provider/token.actions.githubusercontent.com
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${SystemName}-terraform-state-${Stage}"
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+  # GitHubOIDC:
+  #   Type: AWS::IAM::OIDCProvider
+  #   Properties:
+  #     Url: https://token.actions.githubusercontent.com
+  #     ClientIdList: [sts.amazonaws.com]
+  #     ThumbprintList: [!Ref Thumbprint]
+  InfrastructureRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${SystemName}-infrastructure-role-${Stage}"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !Ref OIDCArn
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${TargetRepo}:*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+Outputs:
+  InfrastructureRole:
+    Description: ARN for infrastructure IAM Role.
+    Value: !GetAtt InfrastructureRole.Arn

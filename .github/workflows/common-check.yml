@@ -5,140 +5,403 @@ on:
     branches:
       - main
     types: [opened, synchronize, reopened]
+
 env:
   AWS_REGION: ap-northeast-1
-  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-274-infrastructure-role-dev
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev
+  AWS_ROLE_ARN_STG: arn:aws:iam::637423178195:role/gha-test-infrastructure-role-stg
+  AWS_ROLE_ARN_PROD: arn:aws:iam::315671498329:role/gha-test-infrastructure-role-prod
+  DIR_COMMON_TERRAFORM_DEV: terraform/envs/dev/common
+  DIR_COMMON_TERRAFORM_STG: terraform/envs/stg/common
+  DIR_COMMON_TERRAFORM_PROD: terraform/envs/prod/common
+  DIR_ACCOUNT_BACKEND: account/backend
+  DIR_ACCOUNT_FRONTEND: account/frontend
+  DIR_ACCOUNT_TERRAFORM_DEV: terraform/envs/dev/account
+  DIR_ACCOUNT_TERRAFORM_STG: terraform/envs/stg/account
+  DIR_ACCOUNT_TERRAFORM_PROD: terraform/envs/prod/account
+  DIR_LOG_BACKEND: log/backend
+  DIR_LOG_TERRAFORM_DEV: terraform/envs/dev/log
+  DIR_LOG_TERRAFORM_STG: terraform/envs/stg/log
+  DIR_LOG_TERRAFORM_PROD: terraform/envs/prod/log
+
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      service_backend: ${{ steps.filter.outputs.service_backend }}
-      service_frontend: ${{ steps.filter.outputs.service_frontend }}
-      terraform_dev: ${{ steps.filter.outputs.terraform_dev }}
+      common_terraform_dev: ${{ steps.filter.outputs.common_terraform_dev }}
+      common_terraform_stg: ${{ steps.filter.outputs.common_terraform_stg }}
+      common_terraform_prod: ${{ steps.filter.outputs.common_terraform_prod }}
+      account_terraform_dev: ${{ steps.filter.outputs.account_terraform_dev }}
+      account_terraform_stg: ${{ steps.filter.outputs.account_terraform_stg }}
+      account_terraform_prod: ${{ steps.filter.outputs.account_terraform_prod }}
+      account_backend: ${{ steps.filter.outputs.account_backend }}
+      account_frontend: ${{ steps.filter.outputs.account_frontend }}
+      log_terraform_dev: ${{ steps.filter.outputs.log_terraform_dev }}
+      log_terraform_stg: ${{ steps.filter.outputs.log_terraform_stg }}
+      log_terraform_prod: ${{ steps.filter.outputs.log_terraform_prod }}
+      log_backend: ${{ steps.filter.outputs.log_backend }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: ./.github/actions/changes
         id: filter
-        with:
-          filters: |
-            service_backend:
-              - 'service/pyproject.toml'
-              - 'service/poetry.lock'
-              - 'service/backend/src/*.py'
-              - 'service/backend/src/**/*.py'
-              - 'service/backend/tests/*.py'
-              - 'service/backend/tests/**/*.py'
-            service_frontend:
-              - "service/frontend/package.json"
-              - "service/frontend/package-lock.json"
-              - "service/frontend/src/*"
-              - "service/frontend/tests/*"
-              - "service/frontend/public/*"
-            terraform_dev:
-              - "terraform/*.tf"
 
-  service_backend_lint:
-    needs:
-      - changes
-    if: ${{ needs.changes.outputs.service_backend == 'true' }}
+  account_frontend_test:
+    needs: [changes]
+    if: needs.changes.outputs.account_frontend == 'true'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: service/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Python lint and format
-        uses: ./.github/actions/transactions/python_lint
+      - uses: ./.github/actions/commons/node_install
         with:
-          dir: service/backend
+          dir: ${{ env.DIR_ACCOUNT_FRONTEND }}
+          version: "18"
+      - uses: ./.github/actions/commons/node_test
+        with:
+          dir: ${{ env.DIR_ACCOUNT_FRONTEND }}
+          need_comment: "true"
+
+  account_frontend_lint:
+    needs: [changes]
+    if: needs.changes.outputs.account_frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/node_install
+        with:
+          dir: ${{ env.DIR_ACCOUNT_FRONTEND }}
+          version: "18"
+      - uses: ./.github/actions/commons/node_lint
+        with:
+          dir: ${{ env.DIR_ACCOUNT_FRONTEND }}
+
+  account_backend_lint:
+    needs: [changes]
+    if: needs.changes.outputs.account_backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/python_install
+        with:
+          dir: ${{ env.DIR_ACCOUNT_BACKEND }}
           version: "3.11"
           version_poetry: "1.8.2"
+      - uses: ./.github/actions/commons/python_lint
+        with:
+          dir: ${{ env.DIR_ACCOUNT_BACKEND }}
 
-  service_backend_test:
-    needs:
-      - changes
-    if: ${{ needs.changes.outputs.service_backend == 'true' }}
+  account_backend_test:
+    needs: [changes]
+    if: needs.changes.outputs.account_backend == 'true'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: service/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Python test
-        uses: ./.github/actions/transactions/python_test
+      - uses: ./.github/actions/commons/python_install
         with:
-          dir: service/backend
-          need_comment: "true"
+          dir: ${{ env.DIR_ACCOUNT_BACKEND }}
           version: "3.11"
           version_poetry: "1.8.2"
-
-  service_frontend_lint:
-    needs:
-      - changes
-    if: ${{ needs.changes.outputs.service_frontend == 'true' }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: service/frontend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Node.js lint and format
-        uses: ./.github/actions/transactions/node_lint
+      - uses: ./.github/actions/commons/python_test
         with:
-          dir: service/frontend
-          version: "18"
-
-  service_frontend_test:
-    needs:
-      - changes
-    if: ${{ needs.changes.outputs.service_frontend == 'true' }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: service/frontend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Node.js test
-        uses: ./.github/actions/transactions/node_test
-        with:
-          dir: service/frontend
+          dir: ${{ env.DIR_ACCOUNT_BACKEND }}
           need_comment: "true"
-          version: "18"
 
-  terraform_plan:
-    needs:
-      - changes
-    if: ${{ needs.changes.outputs.terraform_dev == 'true' }}
+  log_backend_lint:
+    needs: [changes]
+    if: needs.changes.outputs.log_backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: log
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry
+          poetry config virtualenvs.create false
+      - name: Install dependencies
+        run: |
+          poetry install --no-root
+          poetry add black flake8 --dev
+      - name: Check by black
+        run: black --check --line-length=119 backend
+        working-directory: log
+      - name: Check by flake8
+        run: flake8 --ignore=E203,W293,W503,W504 --max-line-length=119 backend
+        working-directory: log
+
+  log_backend_test:
+    needs: [changes]
+    if: needs.changes.outputs.log_backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: log
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry
+          poetry config virtualenvs.create false
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Check by pytest on backend
+        id: pytest
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: "dummy" # AWS アクセス情報がダミーでも必要なので定義。実際にはアクセスしない。
+          AWS_SECRET_ACCESS_KEY: "dummy"
+          AWS_SECURITY_TOKEN: "dummy"
+          AWS_SESSION_TOKEN: "dummy"
+        run: |
+          set -o pipefail
+          cd .. && docker-compose up -d && cd backend
+          until curl -XGET "https://localhost:9200" --insecure > /dev/null; do sleep 1; done
+          sleep 10
+          pytest --cov=src --cov-branch --cov-report=term-missing:skip-covered --junitxml=pytest.xml tests | tee pytest-coverage.txt
+          cd .. && docker-compose down
+        working-directory: ./log/backend
+      - name: Comment coverage on Pull-Request
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          title: Coverage detail
+          badge-title: Coverage
+          coverage-path-prefix: ./log/backend/
+          create-new-comment: true
+          pytest-coverage-path: log/backend/pytest-coverage.txt
+          junitxml-path: log/backend/pytest.xml
+          junitxml-title: Coverage for "log/backend"
+      - name: Error Handling
+        if: ${{ steps.pytest.outcome == 'failure' }}
+        run: |
+          echo "Error handling"
+          echo ${{ steps.pytest.outcome }}
+          exit 1
+
+  common_terraform_plan_dev:
+    needs: [changes]
+    if: needs.changes.outputs.common_terraform_dev == 'true'
     permissions: write-all
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: terraform
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Run terraform plan
-        uses: ./.github/actions/transactions/terraform_plan
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
-          dir: terraform
-          label: "terraform"
+          dir: ${{ env.DIR_COMMON_TERRAFORM_DEV }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_COMMON_TERRAFORM_DEV }}
+          label: "dev/common"
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
-          version_tfcmt: "v4.9.0"
+
+  common_terraform_plan_stg:
+    needs: [changes]
+    if: needs.changes.outputs.common_terraform_stg == 'true'
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          dir: ${{ env.DIR_COMMON_TERRAFORM_STG }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_COMMON_TERRAFORM_STG }}
+          label: "stg/common"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  common_terraform_plan_prod:
+    needs: [changes]
+    if: needs.changes.outputs.common_terraform_prod == 'true'
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: ${{ env.DIR_COMMON_TERRAFORM_PROD }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_COMMON_TERRAFORM_PROD }}
+          label: "prod/common"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  account_terraform_plan_dev:
+    needs:
+      - changes
+      - common_terraform_plan_dev
+    if: ${{ !failure() && needs.changes.outputs.account_terraform_dev == 'true'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_DEV }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_DEV }}
+          label: "dev/account"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  account_terraform_plan_stg:
+    needs:
+      - changes
+      - common_terraform_plan_stg
+    if: ${{ !failure() && needs.changes.outputs.account_terraform_stg == 'true'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_STG }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_STG }}
+          label: "stg/account"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  account_terraform_plan_prod:
+    needs:
+      - changes
+      - common_terraform_plan_prod
+    if: ${{ !failure() && needs.changes.outputs.account_terraform_prod == 'true'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PROD }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PROD }}
+          label: "prod/account"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  log_terraform_plan_dev:
+    needs:
+      - changes
+      - common_terraform_plan_dev
+    if: ${{ !failure() && needs.changes.outputs.log_terraform_dev == 'true'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          dir: ${{ env.DIR_LOG_TERRAFORM_DEV }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_LOG_TERRAFORM_DEV }}
+          label: "dev/log"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  log_terraform_plan_stg:
+    needs:
+      - changes
+      - common_terraform_plan_stg
+    if: ${{ !failure() && needs.changes.outputs.log_terraform_stg == 'true'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          dir: ${{ env.DIR_LOG_TERRAFORM_STG }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_LOG_TERRAFORM_STG }}
+          label: "stg/log"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  log_terraform_plan_prod:
+    needs:
+      - changes
+      - common_terraform_plan_prod
+    if: ${{ !failure() && needs.changes.outputs.log_terraform_prod == 'true'}}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: ${{ env.DIR_LOG_TERRAFORM_PROD }}
+          need_tfcmt: "true"
+      - uses: ./.github/actions/commons/terraform_plan
+        with:
+          dir: ${{ env.DIR_LOG_TERRAFORM_PROD }}
+          label: "prod/log"
+          need_tfcmt: "true"
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   check_code:
     needs:
-      - service_backend_lint
-      - service_backend_test
-      - service_frontend_lint
-      - service_frontend_test
-      - terraform_plan
+      - common_terraform_plan_dev
+      - common_terraform_plan_stg
+      - common_terraform_plan_prod
+      - account_terraform_plan_dev
+      - account_terraform_plan_stg
+      - account_terraform_plan_prod
+      - account_backend_lint
+      - account_backend_test
+      - account_frontend_lint
+      - account_frontend_test
+      - log_terraform_plan_dev
+      - log_terraform_plan_stg
+      - log_terraform_plan_prod
+      - log_backend_lint
+      - log_backend_test
     if: always()
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,61 @@
+name: account-build
+run-name: Confirm account api image for `${{ github.base_ref }}`
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - release/*/account
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ROLE_ARN_STG: arn:aws:iam::637423178195:role/rpf-infrastructure-role-stg
+  AWS_ROLE_ARN_PROD: arn:aws:iam::315671498329:role/rpf-infrastructure-role-prod
+
+jobs:
+  confirm_stg:
+    if: startsWith(github.base_ref, 'release/stg/account')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Retrieve SHA from head branch name
+        uses: ./.github/actions/release/context
+        id: context
+      - name: Confirm image
+        uses: ./.github/actions/commons/ecr_confirm
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          repository_name: "rpf-account-lambda"
+          tag: ${{ steps.context.outputs.sha }}
+
+  confirm_prod:
+    if: startsWith(github.base_ref, 'release/prod/account')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Retrieve SHA from head branch name
+        uses: ./.github/actions/release/context
+        id: context
+      - name: Confirm image
+        uses: ./.github/actions/commons/ecr_confirm
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          repository_name: "rpf-account-lambda"
+          tag: ${{ steps.context.outputs.sha }}
+
+  confirm_image_pushed:
+    needs:
+      - confirm_stg
+      - confirm_prod
+    if: failure() == false && contains(needs.*.result, 'cancelled') == false
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit -1
+        name: Fails if no confirmed image
+        if: contains(needs.*.result, 'success') == false
+      - run: echo "$json"
+        env:
+          json: ${{ toJSON(needs) }}

@@ -1,0 +1,198 @@
+name: account-deploy
+run-name: Deploy account for `${{ github.base_ref }}`
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - release/*/account
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ROLE_ARN_STG: arn:aws:iam::637423178195:role/rpf-infrastructure-role-stg
+  AWS_ROLE_ARN_PROD: arn:aws:iam::315671498329:role/rpf-infrastructure-role-prod
+
+jobs:
+  account_backend_deploy_stg:
+    if: startsWith(github.base_ref, 'release/stg/account') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: account/backend/lambroll
+          repository_name: "rpf-account-lambda"
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          dir: account/backend/lambroll
+          function_names: "webapp"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://rpf-terraform-state-stg/rpf-account.tfstate"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: "rpf-account-lambda"
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
+
+  account_frontend_deploy_stg:
+    if: startsWith(github.base_ref, 'release/stg/account') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - name: Install terraform
+        uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          dir: terraform/envs/stg/account
+      - name: Get terraform output value
+        id: tf
+        working-directory: terraform/envs/stg/account
+        run: |
+          JSON=`terraform-bin output -json`
+          echo "cognito_client_id=`echo $JSON | jq -r .cognito_client_id.value`" >> $GITHUB_OUTPUT
+          echo "cognito_user_pool_id=`echo $JSON | jq -r .cognito_user_pool_id.value`" >> $GITHUB_OUTPUT
+          echo "rpf_account_api_url=`echo $JSON | jq -r .rpf_account_api_url.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_bucket=`echo $JSON | jq -r .rpf_account_cloudfront_bucket.value`" >> $GITHUB_OUTPUT
+      - name: Inject version
+        working-directory: account/frontend
+        run: |
+          VERSION=${{ steps.context.outputs.version }}
+          VERSION_SHA=$VERSION-${{ steps.context.outputs.sha }}
+          echo VITE_VERSION_SHA=$VERSION_SHA>.env
+          echo VITE_AWS_REGION=${{ env.AWS_REGION }}>>.env
+          echo VITE_AWS_USER_POOL_ID=${{ steps.tf.outputs.cognito_user_pool_id }}>>.env
+          echo VITE_AWS_USER_WEB_CLIENT_ID=${{ steps.tf.outputs.cognito_client_id }}>>.env
+          echo VITE_RPF_ENDPOINT=`echo ${{ steps.tf.outputs.rpf_account_api_url }}`>>.env
+      - name: Install Node.js
+        uses: ./.github/actions/commons/node_install
+        with:
+          dir: account/frontend
+          version: "18"
+      - name: Deploy Node.js application to cloudfront
+        uses: ./.github/actions/commons/node_deploy
+        with:
+          dir: account/frontend
+          dir_build_result: account/frontend/dist
+          distribution_id: ${{ steps.tf.outputs.cloudfront_id }}
+          origin_bucket: ${{ steps.tf.outputs.cloudfront_bucket }}
+
+  account_backend_deploy_prod:
+    if: startsWith(github.base_ref, 'release/prod/account') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: account/backend/lambroll
+          repository_name: "rpf-account-lambda"
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: account/backend/lambroll
+          function_names: "webapp"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://rpf-terraform-state-prod/rpf-account.tfstate"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: "rpf-account-lambda"
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
+
+  account_frontend_deploy_prod:
+    if: startsWith(github.base_ref, 'release/prod/account') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    env:
+      DIR_FRONTEND: account/frontend
+      DIR_TF: terraform/envs/prod/account
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - name: Install terraform
+        uses: ./.github/actions/commons/terraform_install
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: terraform/envs/prod/account
+      - name: Get terraform output value
+        id: tf
+        working-directory: terraform/envs/prod/account
+        run: |
+          JSON=`terraform-bin output -json`
+          echo "cognito_client_id=`echo $JSON | jq -r .cognito_client_id.value`" >> $GITHUB_OUTPUT
+          echo "cognito_user_pool_id=`echo $JSON | jq -r .cognito_user_pool_id.value`" >> $GITHUB_OUTPUT
+          echo "rpf_account_api_url=`echo $JSON | jq -r .rpf_account_api_url.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_bucket=`echo $JSON | jq -r .rpf_account_cloudfront_bucket.value`" >> $GITHUB_OUTPUT
+      - name: Inject version
+        working-directory: account/frontend
+        run: |
+          VERSION=${{ steps.context.outputs.version }}
+          VERSION_SHA=$VERSION-${{ steps.context.outputs.sha }}
+          echo VITE_VERSION_SHA=$VERSION_SHA>.env
+          echo VITE_AWS_REGION=${{ env.AWS_REGION }}>>.env
+          echo VITE_AWS_USER_POOL_ID=${{ steps.tf.outputs.cognito_user_pool_id }}>>.env
+          echo VITE_AWS_USER_WEB_CLIENT_ID=${{ steps.tf.outputs.cognito_client_id }}>>.env
+          echo VITE_RPF_ENDPOINT=`echo ${{ steps.tf.outputs.rpf_account_api_url }}`>>.env
+      - name: Install Node.js
+        uses: ./.github/actions/commons/node_install
+        with:
+          dir: account/frontend
+          version: "18"
+      - name: Deploy Node.js application to cloudfront
+        uses: ./.github/actions/commons/node_deploy
+        with:
+          dir: account/frontend
+          dir_build_result: account/frontend/dist
+          distribution_id: ${{ steps.tf.outputs.cloudfront_id }}
+          origin_bucket: ${{ steps.tf.outputs.cloudfront_bucket }}
+
+  notify_failed:
+    needs:
+      - account_backend_deploy_stg
+      - account_frontend_deploy_stg
+      - account_backend_deploy_prod
+      - account_frontend_deploy_prod
+    if: ${{ failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          ACTION_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ACTOR: ${{ github.actor }}
+        with:
+          script: |
+            const { ACTOR } = process.env
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `@${{ env.ACTOR }} Release task has failed.\nSee ${{ env.ACTION_URL }}`
+            })

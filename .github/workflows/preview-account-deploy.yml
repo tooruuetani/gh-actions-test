@@ -1,0 +1,198 @@
+name: preview-account-deploy
+run-name: Deploying preview account for [${{ github.head_ref }}@${{ github.event.pull_request.head.sha }}]
+on:
+  pull_request:
+    types:
+      - labeled
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ROLE: arn:aws:iam::082954585471:role/rpf-infrastructure-role-dev
+  REPO: rpf-account-lambda
+  TF_BUCKET: rpf-terraform-state-dev
+
+jobs:
+  infrastructure:
+    if: github.event.label.name == 'preview-account'
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preview/comment_start
+        with:
+          service_name: account
+      - uses: ./.github/actions/preview/context
+        id: context
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          args_init: -backend-config="key=${{ steps.context.outputs.stage }}.tfstate"
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE }}
+          dir: terraform/envs/preview/account
+      - uses: ./.github/actions/commons/terraform_apply
+        with:
+          args_apply: -var "stage=${{ steps.context.outputs.stage }}"
+          dir: terraform/envs/preview/account
+      - uses: ./.github/actions/preview/label_add # 削除が必要になるため、インフラのデプロイが成功したらラベルを追加
+        with:
+          name: preview-account-deployed
+
+  account_backend:
+    needs: [infrastructure]
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preview/context
+        id: context
+      - uses: ./.github/actions/commons/docker_build
+        with:
+          dir: account
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/ecr_upload
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE }}
+          repository_name: "rpf-account-lambda-${{ steps.context.outputs.stage }}"
+          tag_local: ${{ steps.context.outputs.sha }}
+          tag_remote: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: account/backend/lambroll
+          repository_name: "rpf-account-lambda-${{ steps.context.outputs.stage }}"
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          dir: account/backend/lambroll
+          function_names: "webapp"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://rpf-terraform-state-dev/${{ steps.context.outputs.stage }}.tfstate"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: "rpf-account-lambda-${{ steps.context.outputs.stage }}"
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
+
+  account_frontend:
+    needs: [infrastructure]
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preview/context
+        id: context
+      - name: Install terraform
+        uses: ./.github/actions/commons/terraform_install
+        with:
+          args_init: -backend-config="key=${{ steps.context.outputs.stage }}.tfstate"
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE }}
+          dir: terraform/envs/preview/account
+      - name: Get terraform output value
+        id: tf
+        working-directory: terraform/envs/preview/account
+        run: |
+          JSON=`terraform-bin output -json`
+          echo "cognito_client_id=`echo $JSON | jq -r .cognito_client_id.value`" >> $GITHUB_OUTPUT
+          echo "cognito_user_pool_id=`echo $JSON | jq -r .cognito_user_pool_id.value`" >> $GITHUB_OUTPUT
+          echo "dynamodb_account=`echo $JSON | jq -r .dynamodb_account.value`" >> $GITHUB_OUTPUT
+          echo "rpf_account_api_id=`echo $JSON | jq -r .rpf_account_api_id.value`" >> $GITHUB_OUTPUT
+          echo "rpf_account_api_url=`echo $JSON | jq -r .rpf_account_api_url.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=`echo $JSON | jq -r .rpf_account_cloudfront_id.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_bucket=`echo $JSON | jq -r .rpf_account_cloudfront_bucket.value`" >> $GITHUB_OUTPUT
+      - name: Inject version
+        working-directory: account/frontend
+        run: |
+          VERSION=${{ steps.context.outputs.version }}
+          VERSION_SHA=$VERSION-${{ steps.context.outputs.sha }}
+          echo VITE_VERSION_SHA=$VERSION_SHA>.env
+          echo VITE_AWS_REGION=${{ env.AWS_REGION }}>>.env
+          echo VITE_AWS_USER_POOL_ID=${{ steps.tf.outputs.cognito_user_pool_id }}>>.env
+          echo VITE_AWS_USER_WEB_CLIENT_ID=${{ steps.tf.outputs.cognito_client_id }}>>.env
+          echo VITE_RPF_ENDPOINT=`echo ${{ steps.tf.outputs.rpf_account_api_url }}`>>.env
+      - name: Install Node.js
+        uses: ./.github/actions/commons/node_install
+        with:
+          dir: account/frontend
+          version: "18"
+      - name: Deploy Node.js application to cloudfront
+        uses: ./.github/actions/commons/node_deploy
+        with:
+          dir: account/frontend
+          dir_build_result: account/frontend/dist
+          distribution_id: ${{ steps.tf.outputs.cloudfront_id }}
+          origin_bucket: ${{ steps.tf.outputs.cloudfront_bucket }}
+
+  cleanup:
+    needs: [infrastructure, account_backend, account_frontend]
+    if: always() && github.event.label.name == 'preview-account'
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preview/comment_deploy_failed
+        if: contains(needs.*.result, 'failure')
+      - uses: ./.github/actions/preview/label_remove
+        with:
+          name: preview-account
+
+  finish:
+    needs: [infrastructure, account_backend, account_frontend]
+    if: failure() == false && contains(needs.*.result, 'cancelled') == false && github.event.label.name == 'preview-account'
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preview/context
+        id: context
+      - uses: ./.github/actions/commons/terraform_install
+        with:
+          args_init: -backend-config="key=${{ steps.context.outputs.stage }}.tfstate"
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE }}
+          dir: terraform/envs/preview/account
+      - name: Get terraform output value
+        id: tf
+        working-directory: terraform/envs/preview/account
+        run: |
+          JSON=`terraform-bin output -json`
+          echo "apigateway_id=`echo $JSON | jq -r .rpf_account_api_id.value`" >> $GITHUB_OUTPUT
+          echo "apigateway_url=`echo $JSON | jq -r .rpf_account_api_url.value`" >> $GITHUB_OUTPUT
+          echo "cognito_client_id=`echo $JSON | jq -r .cognito_client_id.value`" >> $GITHUB_OUTPUT
+          echo "cognito_user_pool_id=`echo $JSON | jq -r .cognito_user_pool_id.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=`echo $JSON | jq -r .rpf_account_cloudfront_id.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_url=`echo $JSON | jq -r .rpf_account_cloudfront_url.value`" >> $GITHUB_OUTPUT
+          echo "dynamodb_account=`echo $JSON | jq -r .dynamodb_account.value`" >> $GITHUB_OUTPUT
+      - uses: actions/github-script@v7
+        env:
+          ACTOR: ${{ github.actor }}
+          API_ID: ${{ steps.tf.outputs.apigateway_id }}
+          API_URL: ${{ steps.tf.outputs.apigateway_url }}
+          CLIENT_ID: ${{ steps.tf.outputs.cognito_client_id }}
+          COGNITO_ID: ${{ steps.tf.outputs.cognito_user_pool_id }}
+          DIST_ID: ${{ steps.tf.outputs.cloudfront_id }}
+          DIST_URL: ${{ steps.tf.outputs.cloudfront_url }}
+          SHA: ${{ steps.context.outputs.sha }}
+          DYNAMODB_TABLE: ${{ steps.tf.outputs.dynamodb_account }}
+        with:
+          script: |
+            const { ACTOR, API_ID, API_URL, CLIENT_ID, COGNITO_ID, DIST_ID, DIST_URL, DYNAMODB_TABLE, SHA } = process.env
+            msg = [
+              `@${ACTOR} Deploying preview@${SHA} has completed.`,
+              `* To confirm backend, see ${API_URL} .`,
+              `* To confirm frontend, see https://${DIST_URL} .`,
+              `* Other resources below:`,
+              `    * APIGateway id: [${API_ID}](https://ap-northeast-1.console.aws.amazon.com/apigateway/home?region=ap-northeast-1#/apis/${API_ID}/resources)`,
+              `    * CloudFront Distribution id: [${DIST_ID}](https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=ap-northeast-1#/distributions/${DIST_ID})`,
+              `    * Cognito user pool id: [${COGNITO_ID}](https://ap-northeast-1.console.aws.amazon.com/cognito/v2/idp/user-pools/${COGNITO_ID})`,
+              `    * Cognito user pool client id: [${CLIENT_ID}](https://ap-northeast-1.console.aws.amazon.com/cognito/v2/idp/user-pools/${COGNITO_ID}/app-integration/clients/${CLIENT_ID})`,
+              `    * DynamoDB account table name: [${DYNAMODB_TABLE}](https://ap-northeast-1.console.aws.amazon.com/dynamodbv2/home?region=ap-northeast-1#item-explorer?table=${DYNAMODB_TABLE})`,
+            ].join("\n")
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: msg,
+            })

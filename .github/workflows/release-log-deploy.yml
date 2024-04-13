@@ -1,0 +1,118 @@
+name: log-deploy
+run-name: Deploy log for `${{ github.base_ref }}`
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - release/*/log
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/rpf-infrastructure-role-dev
+  AWS_ROLE_ARN_STG: arn:aws:iam::637423178195:role/rpf-infrastructure-role-stg
+  AWS_ROLE_ARN_PROD: arn:aws:iam::315671498329:role/rpf-infrastructure-role-prod
+
+jobs:
+  deploy_log_backend_dev:
+    if: startsWith(github.base_ref, 'release/dev/log') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - uses: ./.github/actions/commons/docker_build
+        with:
+          dir: log
+          tag: ${{ steps.context.outputs.sha }}
+          test_commands: "pytest --cov=backend/src --cov-branch"
+      - uses: ./.github/actions/commons/ecr_upload
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          repository_name: "rpf-log-lambda"
+          tag_local: ${{ steps.context.outputs.sha }}
+          tag_remote: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: log/backend/lambroll
+          repository_name: "rpf-log-lambda"
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          dir: log/backend/lambroll
+          function_names: "A01 A02 A03"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://rpf-terraform-state-dev/rpf-log.tfstate"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: "rpf-log-lambda"
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
+
+  deploy_log_backend_stg:
+    if: startsWith(github.base_ref, 'release/stg/log') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: log/backend/lambroll
+          repository_name: "rpf-log-lambda"
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: log/backend/lambroll
+          function_names: "A01 A02 A03"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://rpf-terraform-state-stg/rpf-log.tfstate"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: "rpf-log-lambda"
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
+
+  deploy_log_backend_prod:
+    if: startsWith(github.base_ref, 'release/prod/log') && github.event.pull_request.merged == true
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get context
+        uses: ./.github/actions/context_to_release
+        id: context
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: log/backend/lambroll
+          repository_name: "rpf-log-lambda"
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          dir: log/backend/lambroll
+          function_names: "A01 A02 A03"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://rpf-terraform-state-prod/rpf-log.tfstate"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: "rpf-log-lambda"
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
