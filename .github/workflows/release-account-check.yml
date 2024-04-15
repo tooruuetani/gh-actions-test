@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Retrieve SHA from head branch name
-        uses: ./.github/actions/release/context
+        uses: ./.github/actions/context_to_release
         id: context
       - name: Confirm image
         uses: ./.github/actions/commons/ecr_confirm
@@ -37,7 +37,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Retrieve SHA from head branch name
-        uses: ./.github/actions/release/context
+        uses: ./.github/actions/context_to_release
         id: context
       - name: Confirm image
         uses: ./.github/actions/commons/ecr_confirm

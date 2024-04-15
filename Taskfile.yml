@@ -1,0 +1,31 @@
+version: "3"
+
+tasks:
+  to_release_account_stg:
+    cmds:
+      - git checkout -b {{.PR_HEAD}}
+      - git push --set-upstream origin {{.PR_HEAD}}
+      - gh pr create -w -a "@me" --base {{.PR_BASE}} --head {{.PR_HEAD}} --title "{{.DESC}}"
+      - git checkout main
+      - git branch -D {{.PR_HEAD}}
+    vars:
+      CURRENT:
+        sh: git rev-parse --abbrev-ref HEAD
+      SHA:
+        sh: t=`git rev-parse --short HEAD`; echo ${t:0:7}
+      STAGE: '{{default "stg" .STAGE}}'
+      SUBSYSTEM: '{{default "account" .SUBSYSTEM}}'
+      PR_BASE: "release/{{.STAGE}}/{{.SUBSYSTEM}}"
+      PR_HEAD: "deploy/{{.SHA}}/{{.STAGE}}/{{.SUBSYSTEM}}"
+      DESC: "[{{.STAGE}}] Deploy Request to {{.SUBSYSTEM}} from main@{{.SHA}}"
+    preconditions:
+      - sh: "[ {{.CURRENT}} = main ]"
+        msg: このタスクは "main" ブランチで実行できます。 "{{.CURRENT}}" では実行できません。
+      - sh: "[ `where gh` != '' ]"
+        msg: "Tools `GitHub CLI` is missing. Please install by `scoop install gh`."
+
+  to_release_account_prod:
+    cmds:
+      - task: to_release_account_stg
+        vars:
+          STAGE: prod
