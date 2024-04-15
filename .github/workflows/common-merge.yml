@@ -29,6 +29,7 @@ env:
   REPO_LOG: gha-test-log-lambda # TODO
   TFSTATE_BUCKET_DEV: gha-test-terraform-state-dev # TODO
   TFSTATE_NAME_ACCOUNT_DEV: gha-test-account.tfstate # TODO
+  TFSTATE_NAME_LOG_DEV: gha-test-log.tfstate # TODO
 
 jobs:
   changes:
@@ -321,6 +322,48 @@ jobs:
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  log_backend_deploy_dev:
+    needs:
+      - changes
+      - log_terraform_apply_dev
+    if: ${{ !failure() && github.event.pull_request.merged == true }}
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/context_to_main
+        id: context
+      - uses: ./.github/actions/commons/docker_build
+        with:
+          dir: ${{ env.DIR_LOG }}
+          tag: ${{ steps.context.outputs.sha }}
+          # test_commands: "pytest --cov=backend/src --cov-branch" # TODO
+      - uses: ./.github/actions/commons/ecr_upload
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          repository_name: ${{ env.REPO_LOG }}
+          tag_local: ${{ steps.context.outputs.sha }}
+          tag_remote: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_update_env
+        with:
+          dir: ${{env.DIR_LOG_BACKEND }}/lambroll
+          repository_name: ${{ env.REPO_LOG }}
+          stage: ${{ steps.context.outputs.stage }}
+          tag: ${{ steps.context.outputs.sha }}
+      - uses: ./.github/actions/commons/lambroll_deploy
+        with:
+          dir: ${{ env.DIR_LOG_BACKEND }}/lambroll
+          function_names: "A01 A02 A03"
+          lambroll_alias: ${{ steps.context.outputs.stage }}
+          lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
+          tfstate_url: "s3://${{ env.TFSTATE_BUCKET_DEV }}/${{ env.TFSTATE_NAME_LOG_DEV }}"
+      - uses: ./.github/actions/commons/ecr_tagging
+        with:
+          repository_name: ${{ env.REPO_LOG }}
+          tag_origin: ${{ steps.context.outputs.sha }}
+          tag_release: ${{ steps.context.outputs.stage }}
+
   notify_failed:
     needs:
       - changes
@@ -335,6 +378,7 @@ jobs:
       - log_terraform_apply_dev
       - log_terraform_apply_stg
       - log_terraform_apply_prod
+      - log_backend_deploy_dev
     if: ${{ failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
