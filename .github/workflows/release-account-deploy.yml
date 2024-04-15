@@ -1,4 +1,4 @@
-name: account-deploy
+name: release-account-deploy
 run-name: Deploy account for `${{ github.base_ref }}`
 on:
   pull_request:

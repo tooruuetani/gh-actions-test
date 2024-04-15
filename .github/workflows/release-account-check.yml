@@ -1,4 +1,4 @@
-name: account-build
+name: release-account-check
 run-name: Confirm account api image for `${{ github.base_ref }}`
 on:
   pull_request:
