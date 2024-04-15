@@ -6,7 +6,8 @@ on:
       - closed
 env:
   AWS_REGION: ap-northeast-1
-  AWS_ROLE: arn:aws:iam::082954585471:role/rpf-infrastructure-role-dev
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/rpf-infrastructure-role-dev
+  DIR_ACCOUNT_TERRAFORM_PRE: terraform/envs/preview/account
 
 jobs:
   infrastructure:
@@ -18,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN_DEV }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Get preview context
         id: context
@@ -35,13 +36,13 @@ jobs:
         with:
           args_init: -backend-config="key=${{ steps.context.outputs.stage }}.tfstate"
           aws_region: ${{ env.AWS_REGION }}
-          aws_role: ${{ env.AWS_ROLE }}
-          dir: terraform/envs/preview/account
+          aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PRE }}
       - name: Terraform destroy
         uses: ./.github/actions/commons/terraform_destroy
         with:
           args_destroy: -var "stage=${{ steps.context.outputs.stage }}"
-          dir: terraform/envs/preview/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PRE }}
           tf_bucket: "rpf-terraform-state-dev"
           tfstate_name: "${{ steps.context.outputs.stage }}.tfstate"
       - uses: ./.github/actions/preview/label_remove

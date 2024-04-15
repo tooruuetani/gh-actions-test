@@ -8,9 +8,26 @@ on:
 
 env:
   AWS_REGION: ap-northeast-1
-  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev
-  AWS_ROLE_ARN_STG: arn:aws:iam::637423178195:role/test-gha-test-infrastructure-role-stg
-  AWS_ROLE_ARN_PROD: arn:aws:iam::315671498329:role/test-gha-test-infrastructure-role-prod
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO
+  AWS_ROLE_ARN_STG: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO 637423178195
+  AWS_ROLE_ARN_PROD: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO 315671498329
+  DIR_COMMON_TERRAFORM_DEV: terraform/envs/dev/common
+  DIR_COMMON_TERRAFORM_STG: terraform/envs/stg/common
+  DIR_COMMON_TERRAFORM_PROD: terraform/envs/prod/common
+  DIR_ACCOUNT: account
+  DIR_ACCOUNT_BACKEND: account/backend
+  DIR_ACCOUNT_FRONTEND: account/frontend
+  DIR_ACCOUNT_TERRAFORM_DEV: terraform/envs/dev/account
+  DIR_ACCOUNT_TERRAFORM_STG: terraform/envs/stg/account
+  DIR_ACCOUNT_TERRAFORM_PROD: terraform/envs/prod/account
+  DIR_LOG: log
+  DIR_LOG_BACKEND: log/backend
+  DIR_LOG_TERRAFORM_DEV: terraform/envs/dev/log
+  DIR_LOG_TERRAFORM_STG: terraform/envs/stg/log
+  DIR_LOG_TERRAFORM_PROD: terraform/envs/prod/log
+  REPO_ACCOUNT: rpf-account-lambda # TODO
+  REPO_LOG: rpf-log-lambda # TODO
+  TFSTATE_BUCKET_DEV: rpf-terraform-state-dev # TODO
 
 jobs:
   changes:
@@ -42,11 +59,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
-          dir: terraform/envs/dev/common
+          dir: ${{ env.DIR_COMMON_TERRAFORM_DEV }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/dev/common
+          dir: ${{ env.DIR_COMMON_TERRAFORM_DEV }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -61,11 +78,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_STG }}
-          dir: terraform/envs/stg/common
+          dir: ${{ env.DIR_COMMON_TERRAFORM_STG }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/stg/common
+          dir: ${{ env.DIR_COMMON_TERRAFORM_STG }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -80,11 +97,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
-          dir: terraform/envs/prod/common
+          dir: ${{ env.DIR_COMMON_TERRAFORM_PROD }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/prod/common
+          dir: ${{ env.DIR_COMMON_TERRAFORM_PROD }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -101,11 +118,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
-          dir: terraform/envs/dev/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_DEV }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/dev/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_DEV }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -122,11 +139,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_STG }}
-          dir: terraform/envs/stg/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_STG }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/stg/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_STG }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -143,11 +160,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
-          dir: terraform/envs/prod/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PROD }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/prod/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PROD }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -159,39 +176,37 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Get context
-        uses: ./.github/actions/context_to_main
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/context_to_main
         id: context
       - uses: ./.github/actions/commons/docker_build
         with:
-          dir: account
+          dir: ${{ env.DIR_ACCOUNT }}
           tag: ${{ steps.context.outputs.sha }}
           test_commands: "pytest --cov=backend/src --cov-branch"
       - uses: ./.github/actions/commons/ecr_upload
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
-          repository_name: "rpf-account-lambda"
+          repository_name: ${{ env.REPO_ACCOUNT}}
           tag_local: ${{ steps.context.outputs.sha }}
           tag_remote: ${{ steps.context.outputs.sha }}
       - uses: ./.github/actions/commons/lambroll_update_env
         with:
-          dir: account/backend/lambroll
-          repository_name: "rpf-account-lambda"
+          dir: ${{env.DIR_ACCOUNT_BACKEND }}/lambroll
+          repository_name: ${{ env.REPO_ACCOUNT}}
           stage: ${{ steps.context.outputs.stage }}
           tag: ${{ steps.context.outputs.sha }}
       - uses: ./.github/actions/commons/lambroll_deploy
         with:
-          dir: account/backend/lambroll
+          dir: ${{ env.DIR_ACCOUNT_BACKEND }}/lambroll
           function_names: "webapp"
           lambroll_alias: ${{ steps.context.outputs.stage }}
           lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
-          tfstate_url: "s3://rpf-terraform-state-dev/rpf-account.tfstate"
+          tfstate_url: "s3://${{ env.TFSTATE_BUCKET_DEV }}/rpf-account.tfstate"
       - uses: ./.github/actions/commons/ecr_tagging
         with:
-          repository_name: "rpf-account-lambda"
+          repository_name: ${{ env.REPO_ACCOUNT }}
           tag_origin: ${{ steps.context.outputs.sha }}
           tag_release: ${{ steps.context.outputs.stage }}
 
@@ -203,20 +218,17 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Get context
-        uses: ./.github/actions/context_to_main
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/context_to_main
         id: context
-      - name: Install terraform
-        uses: ./.github/actions/commons/terraform_install
+      - uses: ./.github/actions/commons/terraform_install
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
-          dir: terraform/envs/dev/account
+          dir: ${{ env.DIR_ACCOUNT_TERRAFORM_DEV }}
       - name: Get terraform output value
         id: tf
-        working-directory: terraform/envs/dev/account
+        working-directory: ${{ env.DIR_ACCOUNT_TERRAFORM_DEV }}
         run: |
           JSON=`terraform-bin output -json`
           echo "cognito_client_id=`echo $JSON | jq -r .cognito_client_id.value`" >> $GITHUB_OUTPUT
@@ -224,7 +236,7 @@ jobs:
           echo "rpf_account_api_url=`echo $JSON | jq -r .rpf_account_api_url.value`" >> $GITHUB_OUTPUT
           echo "cloudfront_bucket=`echo $JSON | jq -r .rpf_account_cloudfront_bucket.value`" >> $GITHUB_OUTPUT
       - name: Inject version
-        working-directory: account/frontend
+        working-directory: ${{ env.DIR_ACCOUNT_FRONTEND }}
         run: |
           VERSION=${{ steps.context.outputs.version }}
           VERSION_SHA=$VERSION-${{ steps.context.outputs.sha }}
@@ -233,16 +245,14 @@ jobs:
           echo VITE_AWS_USER_POOL_ID=${{ steps.tf.outputs.cognito_user_pool_id }}>>.env
           echo VITE_AWS_USER_WEB_CLIENT_ID=${{ steps.tf.outputs.cognito_client_id }}>>.env
           echo VITE_RPF_ENDPOINT=`echo ${{ steps.tf.outputs.rpf_account_api_url }}`>>.env
-      - name: Install Node.js
-        uses: ./.github/actions/commons/node_install
+      - uses: ./.github/actions/commons/node_install
         with:
-          dir: account/frontend
+          dir: ${{ env.DIR_ACCOUNT_FRONTEND }}
           version: "18"
-      - name: Deploy Node.js application to cloudfront
-        uses: ./.github/actions/commons/node_deploy
+      - uses: ./.github/actions/commons/node_deploy
         with:
-          dir: account/frontend
-          dir_build_result: account/frontend/dist
+          dir: ${{ env.DIR_ACCOUNT_FRONTEND }}
+          dir_build_result: ${{ env.DIR_ACCOUNT_FRONTEND }}/dist
           distribution_id: ${{ steps.tf.outputs.cloudfront_id }}
           origin_bucket: ${{ steps.tf.outputs.cloudfront_bucket }}
 
@@ -259,11 +269,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
-          dir: terraform/envs/dev/log
+          dir: ${{ env.DIR_LOG_TERRAFORM_DEV }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/dev/log
+          dir: ${{ env.DIR_LOG_TERRAFORM_DEV }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -280,11 +290,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_STG }}
-          dir: terraform/envs/stg/log
+          dir: ${{ env.DIR_LOG_TERRAFORM_STG }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/stg/log
+          dir: ${{ env.DIR_LOG_TERRAFORM_STG }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -301,11 +311,11 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
-          dir: terraform/envs/prod/log
+          dir: ${{ env.DIR_LOG_TERRAFORM_PROD }}
           need_tfcmt: "true"
       - uses: ./.github/actions/commons/terraform_apply
         with:
-          dir: terraform/envs/prod/log
+          dir: ${{ env.DIR_LOG_TERRAFORM_PROD }}
           need_tfcmt: "true"
           token: ${{ secrets.GITHUB_TOKEN }}
 
