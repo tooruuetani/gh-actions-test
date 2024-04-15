@@ -3,6 +3,5 @@ __pycache__
 .venv
 coverage
 dist
-log
 node_modules
 *.log
