@@ -146,9 +146,8 @@ jobs:
         run: |
           set -o pipefail
           cd .. && docker-compose up -d && cd backend
-          until curl -XGET "https://localhost:9200" --insecure > /dev/null; do sleep 1; done
           sleep 10
-          pytest --cov=src --cov-branch --cov-report=term-missing:skip-covered --junitxml=pytest.xml tests | tee pytest-coverage.txt
+          poetry run pytest --cov=src --cov-branch --cov-report=term-missing:skip-covered --junitxml=pytest.xml tests | tee pytest-coverage.txt
           cd .. && docker-compose down
         working-directory: ${{ env.DIR_LOG_BACKEND }}
       - name: Comment coverage on Pull-Request

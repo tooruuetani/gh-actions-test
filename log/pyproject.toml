@@ -18,10 +18,13 @@ pytest-cov = "5.0.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.coverage.run]
+source = ["backend/src"]
+
 [tool.pytest.ini_options]
-pythonpath= ["src", "tests"]
-testpaths = ["tests",]
-filterwarnings = ["ignore::DeprecationWarning",]
+pythonpath= ["backend/src"]
+testpaths = ["backend/tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.ruff]
 lint.ignore = ["E203","W293"]
