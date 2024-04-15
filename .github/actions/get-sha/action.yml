@@ -1,0 +1,26 @@
+name: 'Get SHA(short)'
+description: 'Get SHA from HEAD or branch.'
+outputs:
+  sha:
+    description: "SHA"
+    value: ${{ steps.get-sha.outputs.sha }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get SHA
+      id: get-sha
+      env:
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }} # GITHUB_SHA だとマージコミットになるため使えない
+        PR_BASE: ${{ github.head_ref }}
+      run: |
+        echo PR_BASE=[$PR_BASE],HEAD_SHA=[$HEAD_SHA]
+        if [[ $PR_BASE =~ ^deploy/.+/(dev|stg|prod)/.+$ ]]; then
+          echo [PR_BASE] is selected.
+          SHORT_SHA=$(echo $PR_BASE | cut -d'/' -f2)
+        else
+          echo [HEAD_SHA] is selected.
+          SHORT_SHA=$(echo $HEAD_SHA | cut -c -7)
+        fi;
+        echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+        echo sha=[$SHORT_SHA]
+      shell: bash

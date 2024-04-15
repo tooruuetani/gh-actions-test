@@ -5,6 +5,9 @@ outputs:
   sha:
     description: "SHA"
     value: ${{ steps.get-sha.outputs.sha }}
+  stage:
+    description: "Stage"
+    value: "dev"
   version:
     description: "Version"
     value: ${{ steps.get-version.outputs.version }}
