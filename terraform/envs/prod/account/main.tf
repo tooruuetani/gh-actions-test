@@ -188,7 +188,7 @@ output "rpf_account_cloudfront_id" {
   value = aws_cloudfront_distribution.main.id
 }
 output "rpf_account_cloudfront_url" {
-  value = aws_cloudfront_distribution.main
+  value = aws_cloudfront_distribution.main.domain_name
 }
 output "rpf_account_api_id" {
   value = "dummy"
