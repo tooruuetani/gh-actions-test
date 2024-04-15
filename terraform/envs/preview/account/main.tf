@@ -188,6 +188,7 @@ resource "aws_iam_role" "main" {
 }
 
 resource "aws_lambda_function" "main" {
+  depends_on    = [aws_ecr_repository.main, null_resource.generate_dummy_image]
   function_name = "gha-test-lambda-${local.stage}"
   package_type  = "Image"
   role          = aws_iam_role.main.arn

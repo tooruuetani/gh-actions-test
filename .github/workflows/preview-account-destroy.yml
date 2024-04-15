@@ -6,8 +6,11 @@ on:
       - closed
 env:
   AWS_REGION: ap-northeast-1
-  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO
   DIR_ACCOUNT_TERRAFORM_PRE: terraform/envs/preview/account
+  REPO_ACCOUNT: gha-test-account-lambda # TODO
+  SPA_BUCKET: cloudfornt-origin-for-gha-test # TODO
+  TFSTATE_BUCKET_DEV: gha-test-terraform-state-dev # TODO
 
 jobs:
   infrastructure:
@@ -27,11 +30,11 @@ jobs:
       - name: Remove S3 bucket contents
         uses: ./.github/actions/commons/s3_clear
         with:
-          bucket_name: rpf-account-cloudfront-origin-${{ steps.context.outputs.stage }}
+          bucket_name: "${{ env.SPA_BUCKET }}-${{ steps.context.outputs.stage }}"
       - name: Remove ECR repository and images
         uses: ./.github/actions/commons/ecr_clear_force
         with:
-          repository_name: rpf-account-lambda-${{ steps.context.outputs.stage }}
+          repository_name: "${{ env.REPO_ACCOUNT }}-${{ steps.context.outputs.stage }}"
       - uses: ./.github/actions/commons/terraform_install
         with:
           args_init: -backend-config="key=${{ steps.context.outputs.stage }}.tfstate"
@@ -43,7 +46,7 @@ jobs:
         with:
           args_destroy: -var "stage=${{ steps.context.outputs.stage }}"
           dir: ${{ env.DIR_ACCOUNT_TERRAFORM_PRE }}
-          tf_bucket: "rpf-terraform-state-dev"
+          tf_bucket: ${{ env.TFSTATE_BUCKET_DEV }}
           tfstate_name: "${{ steps.context.outputs.stage }}.tfstate"
       - uses: ./.github/actions/preview/label_remove
         with:
