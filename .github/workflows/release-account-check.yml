@@ -8,8 +8,9 @@ on:
 
 env:
   AWS_REGION: ap-northeast-1
-  AWS_ROLE_ARN_STG: arn:aws:iam::637423178195:role/rpf-infrastructure-role-stg
-  AWS_ROLE_ARN_PROD: arn:aws:iam::315671498329:role/rpf-infrastructure-role-prod
+  AWS_ROLE_ARN_STG: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO 637423178195
+  AWS_ROLE_ARN_PROD: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO 315671498329
+  REPO_ACCOUNT: gha-test-account-lambda # TODO
 
 jobs:
   confirm_stg:
@@ -26,7 +27,7 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_STG }}
-          repository_name: "rpf-account-lambda"
+          repository_name: ${{ env.REPO_ACCOUNT }}
           tag: ${{ steps.context.outputs.sha }}
 
   confirm_prod:
@@ -43,7 +44,7 @@ jobs:
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
-          repository_name: "rpf-account-lambda"
+          repository_name: ${{ env.REPO_ACCOUNT }}
           tag: ${{ steps.context.outputs.sha }}
 
   confirm_image_pushed:

@@ -28,6 +28,7 @@ env:
   REPO_ACCOUNT: gha-test-account-lambda # TODO
   REPO_LOG: gha-test-log-lambda # TODO
   TFSTATE_BUCKET_DEV: gha-test-terraform-state-dev # TODO
+  TFSTATE_NAME_ACCOUNT_DEV: gha-test-account.tfstate # TODO
 
 jobs:
   changes:
@@ -203,7 +204,7 @@ jobs:
           function_names: "webapp"
           lambroll_alias: ${{ steps.context.outputs.stage }}
           lambroll_envfile: "${{ steps.context.outputs.stage }}.env"
-          tfstate_url: "s3://${{ env.TFSTATE_BUCKET_DEV }}/rpf-account.tfstate"
+          tfstate_url: "s3://${{ env.TFSTATE_BUCKET_DEV }}/${{ env.TFSTATE_NAME_ACCOUNT_DEV }}"
       - uses: ./.github/actions/commons/ecr_tagging
         with:
           repository_name: ${{ env.REPO_ACCOUNT }}
