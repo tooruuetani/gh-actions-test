@@ -178,11 +178,23 @@ resource "aws_lambda_function" "main" {
   }
 }
 
-output "cloudfront_bucket" {
+output "dynamodb_account" {
+  value = "m_account"
+}
+output "rpf_account_cloudfront_bucket" {
   value = aws_s3_bucket.main.bucket
 }
-output "cloudfront_id" {
+output "rpf_account_cloudfront_id" {
   value = aws_cloudfront_distribution.main.id
+}
+output "rpf_account_cloudfront_url" {
+  value = aws_cloudfront_distribution.main
+}
+output "rpf_account_api_id" {
+  value = "dummy"
+}
+output "rpf_account_api_url" {
+  value = "dummy"
 }
 output "lambda_name" {
   value = aws_lambda_function.main.function_name
