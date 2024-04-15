@@ -8,9 +8,9 @@ on:
 
 env:
   AWS_REGION: ap-northeast-1
-  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO
-  AWS_ROLE_ARN_STG: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO 637423178195
-  AWS_ROLE_ARN_PROD: arn:aws:iam::082954585471:role/test-gha-test-infrastructure-role-dev # TODO 315671498329
+  AWS_ROLE_ARN_DEV: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO
+  AWS_ROLE_ARN_STG: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO 637423178195
+  AWS_ROLE_ARN_PROD: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO 315671498329
   DIR_COMMON_TERRAFORM_DEV: terraform/envs/dev/common
   DIR_COMMON_TERRAFORM_STG: terraform/envs/stg/common
   DIR_COMMON_TERRAFORM_PROD: terraform/envs/prod/common
