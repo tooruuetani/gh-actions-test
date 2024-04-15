@@ -19,6 +19,7 @@ env:
   DIR_ACCOUNT_TERRAFORM_DEV: terraform/envs/dev/account
   DIR_ACCOUNT_TERRAFORM_STG: terraform/envs/stg/account
   DIR_ACCOUNT_TERRAFORM_PROD: terraform/envs/prod/account
+  DIR_LOG: log
   DIR_LOG_BACKEND: log/backend
   DIR_LOG_TERRAFORM_DEV: terraform/envs/dev/log
   DIR_LOG_TERRAFORM_STG: terraform/envs/stg/log
@@ -113,12 +114,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/commons/python_install
         with:
-          dir: ${{ env.DIR_LOG_BACKEND }}
+          dir: ${{ env.DIR_LOG }}
           version: "3.11"
           version_poetry: "1.8.2"
       - uses: ./.github/actions/commons/python_lint_old
         with:
-          dir: ${{ env.DIR_LOG_BACKEND }}
+          dir: ${{ env.DIR_LOG }}
 
   log_backend_test:
     needs: [changes]
@@ -131,7 +132,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/commons/python_install
         with:
-          dir: ${{ env.DIR_LOG_BACKEND }}
+          dir: ${{ env.DIR_LOG }}
           version: "3.11"
           version_poetry: "1.8.2"
       - name: Check by pytest on backend

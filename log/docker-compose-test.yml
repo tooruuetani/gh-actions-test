@@ -1,0 +1,11 @@
+version: "3"
+services:
+  log_app:
+    build: .
+    container_name: log_app
+    image: log_app:latest
+    environment:
+      - OPENSEARCH_HOST=opensearch-node1
+      - OPENSEARCH_PORT=9200
+    networks:
+      - opensearch-net
