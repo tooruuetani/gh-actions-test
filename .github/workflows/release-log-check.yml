@@ -1,0 +1,64 @@
+name: release-log-check
+run-name: Confirm log lambda image for `${{ github.base_ref }}`
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - release/*/log
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ROLE_ARN_STG: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO 637423178195
+  AWS_ROLE_ARN_PROD: arn:aws:iam::082954585471:role/gha-test-infrastructure-role-dev # TODO 315671498329
+  REPO_LOG: gha-test-log-lambda # TODO
+
+jobs:
+  confirm_stg:
+    if: startsWith(github.base_ref, 'release/stg/log')
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Retrieve SHA from head branch name
+        uses: ./.github/actions/context_to_release
+        id: context
+      - name: Confirm image
+        uses: ./.github/actions/commons/ecr_confirm
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_STG }}
+          repository_name: ${{ env.REPO_LOG }}
+          tag: ${{ steps.context.outputs.sha }}
+
+  confirm_prod:
+    if: startsWith(github.base_ref, 'release/prod/log')
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Retrieve SHA from head branch name
+        uses: ./.github/actions/context_to_release
+        id: context
+      - name: Confirm image
+        uses: ./.github/actions/commons/ecr_confirm
+        with:
+          aws_region: ${{ env.AWS_REGION }}
+          aws_role: ${{ env.AWS_ROLE_ARN_PROD }}
+          repository_name: ${{ env.REPO_LOG }}
+          tag: ${{ steps.context.outputs.sha }}
+
+  confirm_image_pushed:
+    needs:
+      - confirm_stg
+      - confirm_prod
+    if: failure() == false && contains(needs.*.result, 'cancelled') == false
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit -1
+        name: Fails if no confirmed image
+        if: contains(needs.*.result, 'success') == false
+      - run: echo "$json"
+        env:
+          json: ${{ toJSON(needs) }}
