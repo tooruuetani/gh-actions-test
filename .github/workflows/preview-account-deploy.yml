@@ -50,7 +50,7 @@ jobs:
         id: context
       - uses: ./.github/actions/commons/docker_build
         with:
-          dir: account
+          dir: ${{ env.DIR_ACCOUNT_BACKEND}}
           tag: ${{ steps.context.outputs.sha }}
       - uses: ./.github/actions/commons/ecr_upload
         with:
