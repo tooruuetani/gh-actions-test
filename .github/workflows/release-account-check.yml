@@ -15,6 +15,7 @@ env:
 jobs:
   confirm_stg:
     if: startsWith(github.base_ref, 'release/stg/account')
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,6 +33,7 @@ jobs:
 
   confirm_prod:
     if: startsWith(github.base_ref, 'release/prod/account')
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
