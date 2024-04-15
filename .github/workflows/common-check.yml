@@ -19,6 +19,7 @@ env:
   DIR_ACCOUNT_TERRAFORM_DEV: terraform/envs/dev/account
   DIR_ACCOUNT_TERRAFORM_STG: terraform/envs/stg/account
   DIR_ACCOUNT_TERRAFORM_PROD: terraform/envs/prod/account
+  DIR_LOG: log
   DIR_LOG_BACKEND: log/backend
   DIR_LOG_TERRAFORM_DEV: terraform/envs/dev/log
   DIR_LOG_TERRAFORM_STG: terraform/envs/stg/log
@@ -109,30 +110,16 @@ jobs:
     needs: [changes]
     if: needs.changes.outputs.log_backend == 'true'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: log
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/commons/python_install
         with:
-          python-version: "3.11"
-          architecture: "x64"
-      - name: Install Poetry
-        run: |
-          pip install --upgrade pip
-          pip install poetry
-          poetry config virtualenvs.create false
-      - name: Install dependencies
-        run: |
-          poetry install --no-root
-          poetry add black flake8 --dev
-      - name: Check by black
-        run: black --check --line-length=119 backend
-        working-directory: log
-      - name: Check by flake8
-        run: flake8 --ignore=E203,W293,W503,W504 --max-line-length=119 backend
-        working-directory: log
+          dir: ${{ env.DIR_LOG }}
+          version: "3.11"
+          version_poetry: "1.8.2"
+      - uses: ./.github/actions/commons/python_lint_old
+        with:
+          dir: ${{ env.DIR_LOG }}
 
   log_backend_test:
     needs: [changes]
@@ -143,17 +130,11 @@ jobs:
         working-directory: log
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/commons/python_install
         with:
-          python-version: "3.11"
-          architecture: "x64"
-      - name: Install Poetry
-        run: |
-          pip install --upgrade pip
-          pip install poetry
-          poetry config virtualenvs.create false
-      - name: Install dependencies
-        run: poetry install --no-root
+          dir: ${{ env.DIR_LOG }}
+          version: "3.11"
+          version_poetry: "1.8.2"
       - name: Check by pytest on backend
         id: pytest
         continue-on-error: true
@@ -165,9 +146,8 @@ jobs:
         run: |
           set -o pipefail
           cd .. && docker-compose up -d && cd backend
-          until curl -XGET "https://localhost:9200" --insecure > /dev/null; do sleep 1; done
           sleep 10
-          pytest --cov=src --cov-branch --cov-report=term-missing:skip-covered --junitxml=pytest.xml tests | tee pytest-coverage.txt
+          poetry run pytest --cov=src --cov-branch --cov-report=term-missing:skip-covered --junitxml=pytest.xml tests | tee pytest-coverage.txt
           cd .. && docker-compose down
         working-directory: ${{ env.DIR_LOG_BACKEND }}
       - name: Comment coverage on Pull-Request
@@ -175,11 +155,11 @@ jobs:
         with:
           title: Coverage detail
           badge-title: Coverage
-          coverage-path-prefix: ./log/backend/
+          coverage-path-prefix: ${{ env.DIR_LOG_BACKEND }}
           create-new-comment: true
-          pytest-coverage-path: log/backend/pytest-coverage.txt
-          junitxml-path: log/backend/pytest.xml
-          junitxml-title: Coverage for "log/backend"
+          pytest-coverage-path: ${{ env.DIR_LOG_BACKEND }}/pytest-coverage.txt
+          junitxml-path: ${{ env.DIR_LOG_BACKEND }}/pytest.xml
+          junitxml-title: Coverage for "${{ env.DIR_LOG_BACKEND }}"
       - name: Error Handling
         if: ${{ steps.pytest.outcome == 'failure' }}
         run: |

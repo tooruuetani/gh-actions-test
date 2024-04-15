@@ -1,8 +1,8 @@
 __pycache__
+.coverage
 .terraform
 .venv
 coverage
 dist
-log
 node_modules
 *.log

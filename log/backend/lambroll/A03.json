@@ -1,0 +1,37 @@
+{
+  "Architectures": [
+    "x86_64"
+  ],
+  "Code": {
+    "ImageUri": "{{ must_env `AWS_ACCOUNT_ID` }}.dkr.ecr.ap-northeast-1.amazonaws.com/{{ must_env `ECR_NAME` }}:{{ must_env `TAG` }}"
+  },
+  "Description": "",
+  "Environment": {
+    "Variables": {
+      "KINESIS_NAME": "{{ tfstate `output.kinesis_stream_name` }}",
+      "SERVICE_NAME": "{{ must_env `SERVICE_NAME` }}",
+      "S3_TEMPORARY_BUCKET": "{{ tfstate `output.s3_bucket_name_tmp` }}",
+      "S3_ARCHIVE_BUCKET": "{{ tfstate `output.s3_bucket_name_archive` }}",
+      "S3_FAILED_TO_RECEIVE_BUCKET": "{{ tfstate `output.s3_bucket_name_failed` }}",
+      "OPENSEARCH_ENDPOINT": "{{ tfstate `output.opensearch_url` }}",
+      "OPENSEARCH_ROLE_ARN": "{{ tfstate `output.opensearch_role` }}",
+      "OPENSEARCH_ROLE_SESSION_NAME": "opensearch-role-session-{{ must_env `STAGE` }}",
+      "POWERTOOLS_SERVICE_NAME": "rpf-log-{{ must_env `STAGE` }}",
+      "REGION": "ap-northeast-1"
+    }
+  },
+  "EphemeralStorage": {
+    "Size": 512
+  },
+  "FunctionName": "gha-test-log-{{ must_env `STAGE` }}-A03",
+  "MemorySize": 1024,
+  "PackageType": "Image",
+  "Role": "{{ tfstate `output.lambda_role_arn` }}",
+  "SnapStart": {
+    "ApplyOn": "None"
+  },
+  "Timeout": 6,
+  "TracingConfig": {
+    "Mode": "PassThrough"
+  }
+}
