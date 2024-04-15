@@ -16,8 +16,8 @@ env:
   DIR_ACCOUNT_TERRAFORM_STG: terraform/envs/stg/account
   DIR_ACCOUNT_TERRAFORM_PROD: terraform/envs/prod/account
   REPO_ACCOUNT: gha-test-account-lambda # TODO
-  TFSTATE_BUCKET_STG: gha-test-terraform-state-stg # TODO
-  TFSTATE_BUCKET_PROD: gha-test-terraform-state-prod # TODO
+  TFSTATE_BUCKET_STG: gha-test-terraform-state-dev # TODO
+  TFSTATE_BUCKET_PROD: gha-test-terraform-state-dev # TODO
   TFSTATE_NAME_ACCOUNT_STG: gha-test-account-stg.tfstate # TODO
   TFSTATE_NAME_ACCOUNT_PROD: gha-test-account-prod.tfstate # TODO
 
