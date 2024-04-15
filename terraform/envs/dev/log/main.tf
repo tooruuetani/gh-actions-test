@@ -134,7 +134,7 @@ output "lambda_name" {
   value = "gha-test-log-${local.stage}"
 }
 output "lambda_role_arn" {
-  value = "aws_iam_role.main.arn"
+  value = aws_iam_role.main.arn
 }
 output "kinesis_stream_name" {
   value = "dummy_kinesis_stream_name"
