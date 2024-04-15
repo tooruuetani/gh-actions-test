@@ -25,9 +25,9 @@ env:
   DIR_LOG_TERRAFORM_DEV: terraform/envs/dev/log
   DIR_LOG_TERRAFORM_STG: terraform/envs/stg/log
   DIR_LOG_TERRAFORM_PROD: terraform/envs/prod/log
-  REPO_ACCOUNT: rpf-account-lambda # TODO
-  REPO_LOG: rpf-log-lambda # TODO
-  TFSTATE_BUCKET_DEV: rpf-terraform-state-dev # TODO
+  REPO_ACCOUNT: gha-test-account-lambda # TODO
+  REPO_LOG: gha-test-log-lambda # TODO
+  TFSTATE_BUCKET_DEV: gha-test-terraform-state-dev # TODO
 
 jobs:
   changes:

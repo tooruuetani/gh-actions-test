@@ -5,10 +5,13 @@ provider "aws" {
 terraform {
   backend "s3" {
     region  = "ap-northeast-1"
-    bucket  = "test-274-terraform-state-dev"
-    key     = "infrastructure.tfstate"
+    bucket  = "gha-test-terraform-state-dev"
     encrypt = true
   }
+}
+
+variable "stage" {
+  type = string
 }
 
 data "aws_caller_identity" "current" {}
@@ -16,13 +19,13 @@ data "aws_region" "now" {}
 locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.now.name
-  stage      = "test293"
+  stage      = var.stage
   oai_id     = aws_cloudfront_origin_access_identity.main.id
   oai_path   = aws_cloudfront_origin_access_identity.main.cloudfront_access_identity_path
 }
 
 resource "aws_ecr_repository" "main" {
-  name                 = "test-293-ecr-repository"
+  name                 = "gha-test-account-lambda-${local.stage}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -53,7 +56,7 @@ resource "null_resource" "generate_dummy_image" {
 }
 
 resource "aws_s3_bucket" "main" {
-  bucket = "cloudfornt-origin-for-${local.stage}"
+  bucket = "cloudfornt-origin-for-gha-test-${local.stage}"
 }
 
 resource "aws_s3_bucket_ownership_controls" "main" {
@@ -82,7 +85,7 @@ resource "aws_s3_bucket_policy" "main" {
 }
 
 resource "aws_cloudfront_distribution" "main" {
-  comment = "[${local.stage}]Frontend for test"
+  comment = "[${local.stage}]Frontend for gha-test"
   custom_error_response {
     error_caching_min_ttl = "300"
     error_code            = "403"
@@ -130,7 +133,7 @@ resource "aws_cloudfront_distribution" "main" {
 resource "aws_cloudfront_origin_access_identity" "main" {
 }
 resource "aws_iam_role" "main" {
-  name = "test-lambda-role-${local.stage}"
+  name = "gha-test-lambda-role-${local.stage}"
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
   ]
@@ -149,7 +152,7 @@ resource "aws_iam_role" "main" {
   })
 
   inline_policy {
-    name = "test-lambda-role-inline-${local.stage}"
+    name = "gha-test-lambda-role-inline-${local.stage}"
     policy = jsonencode({
       "Version" : "2012-10-17",
       "Statement" : [
@@ -185,7 +188,7 @@ resource "aws_iam_role" "main" {
 }
 
 resource "aws_lambda_function" "main" {
-  function_name = "test-lambda-${local.stage}"
+  function_name = "gha-test-lambda-${local.stage}"
   package_type  = "Image"
   role          = aws_iam_role.main.arn
   image_uri     = "${aws_ecr_repository.main.repository_url}:${local.stage}"
