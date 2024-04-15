@@ -214,7 +214,7 @@ jobs:
   account_frontend_deploy_dev:
     needs:
       - changes
-      - common_terraform_apply_dev
+      - account_terraform_apply_dev
     if: ${{ !failure() && github.event.pull_request.merged == true }}
     permissions: write-all
     runs-on: ubuntu-latest
@@ -236,6 +236,7 @@ jobs:
           echo "cognito_user_pool_id=`echo $JSON | jq -r .cognito_user_pool_id.value`" >> $GITHUB_OUTPUT
           echo "rpf_account_api_url=`echo $JSON | jq -r .rpf_account_api_url.value`" >> $GITHUB_OUTPUT
           echo "cloudfront_bucket=`echo $JSON | jq -r .rpf_account_cloudfront_bucket.value`" >> $GITHUB_OUTPUT
+          echo "cloudfront_id=`echo $JSON | jq -r .rpf_account_cloudfront_id.value`" >> $GITHUB_OUTPUT
       - name: Inject version
         working-directory: ${{ env.DIR_ACCOUNT_FRONTEND }}
         run: |
