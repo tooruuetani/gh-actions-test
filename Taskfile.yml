@@ -29,3 +29,17 @@ tasks:
       - task: to_release_account_stg
         vars:
           STAGE: prod
+
+  to_release_log_stg:
+    cmds:
+      - task: to_release_account_stg
+        vars:
+          STAGE: stg
+          SUBSYSTEM: log
+
+  to_release_log_prod:
+    cmds:
+      - task: to_release_account_stg
+        vars:
+          STAGE: prod
+          SUBSYSTEM: log

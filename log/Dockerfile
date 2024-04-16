@@ -6,7 +6,7 @@ RUN pip install --upgrade pip \
     && poetry config virtualenvs.create false \
     && poetry install
 COPY backend/src/handler.py backend/src/handler.py
-# COPY backend/src/rpf_log/ backend/src/rpf_log/
+COPY backend/src/rpf_log/ backend/src/rpf_log/
 COPY backend/tests/ backend/tests/
 
 FROM public.ecr.aws/lambda/python:3.11 as runner

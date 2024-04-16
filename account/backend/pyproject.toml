@@ -24,9 +24,9 @@ testpaths = ["tests",]
 filterwarnings = ["ignore::DeprecationWarning",]
 
 [tool.ruff]
+line-length = 119
 lint.ignore = ["E203","W293"]
 lint.select = ["I","E","F","W"]
 lint.unfixable = ["F401"]
-line-length = 119
 src = ["src", "tests"]
 target-version = "py311"
