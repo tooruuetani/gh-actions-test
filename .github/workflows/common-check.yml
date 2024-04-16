@@ -117,9 +117,10 @@ jobs:
           dir: ${{ env.DIR_LOG }}
           version: "3.11"
           version_poetry: "1.8.2"
-      - uses: ./.github/actions/commons/python_lint_old
+      - uses: ./.github/actions/commons/python_lint
         with:
           dir: ${{ env.DIR_LOG }}
+          targets: "backend/src backend/tests"
 
   log_backend_test:
     needs: [changes]
@@ -135,6 +136,12 @@ jobs:
           dir: ${{ env.DIR_LOG }}
           version: "3.11"
           version_poetry: "1.8.2"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.DIR_LOG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Check by pytest on backend
         id: pytest
         continue-on-error: true
@@ -145,10 +152,12 @@ jobs:
           AWS_SESSION_TOKEN: "dummy"
         run: |
           set -o pipefail
-          cd .. && docker-compose up -d && cd backend
-          sleep 10
+          cd ..
+          docker compose up -d --wait || echo $?
+          cd backend
           poetry run pytest --cov=src --cov-branch --cov-report=term-missing:skip-covered --junitxml=pytest.xml tests | tee pytest-coverage.txt
-          cd .. && docker-compose down
+          cd ..
+          docker compose down
         working-directory: ${{ env.DIR_LOG_BACKEND }}
       - name: Comment coverage on Pull-Request
         uses: MishaKav/pytest-coverage-comment@main

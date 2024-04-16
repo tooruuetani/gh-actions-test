@@ -333,17 +333,24 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/context_to_main
         id: context
-      - uses: ./.github/actions/commons/docker_build
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
         with:
-          dir: ${{ env.DIR_LOG }}
-          tag: ${{ steps.context.outputs.sha }}
-          # test_commands: "pytest --cov=backend/src --cov-branch" # TODO
+          context: ${{ env.DIR_LOG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: test docker
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose-test.yml up -d --wait
+          docker compose -f docker-compose.yml -f docker-compose-test.yml run --rm --entrypoint "pytest" log_app
+          docker compose -f docker-compose.yml -f docker-compose-test.yml down
+        working-directory: ${{ env.DIR_LOG }}
       - uses: ./.github/actions/commons/ecr_upload
         with:
           aws_region: ${{ env.AWS_REGION }}
           aws_role: ${{ env.AWS_ROLE_ARN_DEV }}
           repository_name: ${{ env.REPO_LOG }}
-          tag_local: ${{ steps.context.outputs.sha }}
+          tag_local: log_app
           tag_remote: ${{ steps.context.outputs.sha }}
       - uses: ./.github/actions/commons/lambroll_update_env
         with:
