@@ -183,7 +183,7 @@ jobs:
         id: context
       - uses: ./.github/actions/commons/docker_build
         with:
-          dir: ${{ env.DIR_ACCOUNT_BACKEND }}
+          dir: ${{ env.DIR_ACCOUNT }}
           tag: ${{ steps.context.outputs.sha }}
           test_commands: "pytest --cov=backend/src --cov-branch"
       - uses: ./.github/actions/commons/ecr_upload
@@ -341,7 +341,7 @@ jobs:
           cache-to: type=gha,mode=max
       - name: test docker
         run: |
-          docker compose -f docker-compose.yml -f docker-compose-test.yml up -d --wait
+          docker compose up -d --wait
           docker compose -f docker-compose.yml -f docker-compose-test.yml run --rm --entrypoint "pytest" log_app
           docker compose -f docker-compose.yml -f docker-compose-test.yml down
         working-directory: ${{ env.DIR_LOG }}
